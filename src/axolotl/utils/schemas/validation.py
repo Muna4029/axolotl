@@ -802,9 +802,7 @@ class OptimizationValidationMixin:
             with open(data.get("deepspeed"), "r", encoding="utf-8") as ds_fin:
                 ds_config = json.load(ds_fin)
                 if "tensor_parallel" not in ds_config:
-                    ds_config["tensor_parallel"] = {
-                        "autotp_sized": tensor_parallel_size
-                    }
+                    ds_config["tensor_parallel"] = {"autotp_size": tensor_parallel_size}
                     temp_dir = tempfile.mkdtemp()
                     with open(
                         Path(temp_dir) / "autotp_ds.json", "w", encoding="utf-8"
