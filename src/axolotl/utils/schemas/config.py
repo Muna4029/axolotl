@@ -50,6 +50,8 @@ from axolotl.utils.schemas.vllm import VllmConfig
 
 LOG = get_logger(__name__)
 
+SUPPORTED_METRICS = {"sacrebleu", "comet", "ter", "chrf", "perplexity"}
+
 
 # pylint: disable=too-many-ancestors
 class AxolotlInputConfig(
@@ -618,7 +620,12 @@ class AxolotlInputConfig(
             "description": "One of 'varlen_llama3', 'batch_ring', 'batch_zigzag', 'batch_stripe'. Defaults to 'varlen_llama3' in the sample packing case, and 'batch_ring' in the non-sample packing case."
         },
     )
-
+    tensor_parallel_size: int | None = Field(
+        default=None,
+        json_schema_extra={
+            "description": "Number of tensor parallel processes in TP group. Only supported with DeepSpeed AutoTP."
+        },
+    )
     special_tokens: SpecialTokensConfig | None = Field(
         default=None,
         json_schema_extra={
