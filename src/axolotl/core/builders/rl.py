@@ -88,6 +88,9 @@ class HFRLTrainerBuilder(TrainerBuilderBase):
             total_num_steps=total_num_steps
         )
 
+        if self.cfg.fsdp_config:
+            training_args_kwargs["fsdp_config"] = self.cfg.fsdp_config
+
         if self.cfg.remove_unused_columns is not None:
             training_args_kwargs["remove_unused_columns"] = (
                 self.cfg.remove_unused_columns
@@ -218,4 +221,3 @@ class HFRLTrainerBuilder(TrainerBuilderBase):
             trainer.add_callback(callback)
 
         return trainer
-

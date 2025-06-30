@@ -56,8 +56,12 @@ class TestMultiGPUQwen2:
                 "gradient_checkpointing_kwargs": {
                     "use_reentrant": False,
                 },
-                "fsdp_version": 1,
+                "fsdp": [
+                    "full_shard",
+                    "auto_wrap",
+                ],
                 "fsdp_config": {
+                    "fsdp_version": 1,
                     "fsdp_limit_all_gathers": True,
                     "fsdp_offload_params": False,
                     "fsdp_sync_module_states": True,

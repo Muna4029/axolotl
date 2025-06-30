@@ -579,7 +579,8 @@ def prepare_optim_env(cfg):
     if not check_cuda_p2p_ib_support():
         if os.getenv("NCCL_P2P_DISABLE") is None:
             os.environ["NCCL_P2P_DISABLE"] = "1"
-    if cfg.fsdp_config:
+    # TODO @SalmanMohammadi remove the cfg.fsdp check in 0.12
+    if cfg.fsdp or cfg.fsdp_config:
         setup_fsdp_envs(cfg)
     elif cfg.deepspeed:
         stage = None

@@ -91,7 +91,7 @@ fsdp_config:
   # fsdp_activation_checkpointing: true
   fsdp_limit_all_gathers: true
   fsdp_sync_module_states: true
-  fsdp_use_orig_params: false
+  fsdp_use_orig_params: true
 #
 special_tokens:
   pad_token: <|end_of_text|>
