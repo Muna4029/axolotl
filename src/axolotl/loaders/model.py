@@ -151,12 +151,11 @@ class ModelLoader:
         return self.cfg.fsdp_version
 
     @cached_property
-    def is_qlora_and_fsdp_enabled_and_fsdp1(self):
+    def is_qlora_and_fsdp_enabled(self):
         """Property that determines if FSDP with QLoRA is enabled."""
         return (
             self.is_fsdp_enabled and
-            self.cfg.adapter == "qlora" and
-            self.fsdp_version == 1
+            self.cfg.adapter == "qlora"
         )
 
     def load(self) -> tuple[PreTrainedModel | PeftModelForCausalLM, PeftConfig | None]:
@@ -205,7 +204,7 @@ class ModelLoader:
         # Handle PeftModel if needed
         if (
             isinstance(self.model, (peft.PeftModel, peft.PeftModelForCausalLM)) and
-            not self.is_qlora_and_fsdp_enabled_and_fsdp1
+            not self.is_qlora_and_fsdp_enabled
         ):
             self.model = self.model.merge_and_unload()
 
@@ -305,7 +304,7 @@ class ModelLoader:
             # we need to convert them back to fp16/bf16 for flash-attn compatibility.
             (
                 (needs_fa2_dtype or self.cfg.flash_attention or self.cfg.flex_attention) and
-                not self.is_qlora_and_fsdp_enabled_and_fsdp1
+                not self.is_fsdp_enabled and self.cfg.adapter == "qlora"
             ) or
             # CCE requires embedding layers to be in fp16/bf16 for backward pass
             self.cfg.cut_cross_entropy
@@ -436,7 +435,11 @@ class ModelLoader:
 
         self.model_kwargs["torch_dtype"] = self.cfg.torch_dtype
 
-        if not is_deepspeed_zero3_enabled():
+        is_ds_zero3 = is_deepspeed_zero3_enabled()
+
+        if self.is_qlora_and_fsdp_enabled:
+            self.model_kwargs["device_map"] = "auto"
+        elif not is_ds_zero3:
             self.model_kwargs["device_map"] = device_map
 
             cur_device = get_device_type()
@@ -604,7 +607,7 @@ class ModelLoader:
     def _build_model(self) -> bool:
         """Load model, with load strategy depending on config."""
         skip_move_to_device = False
-        if self.is_fsdp_enabled and (self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading or self.is_qlora_and_fsdp_enabled_and_fsdp1):
+        if self.is_fsdp_enabled and (self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading or self.is_qlora_and_fsdp_enabled):
             skip_move_to_device = True
             if "device_map" in self.model_kwargs:
                 del self.model_kwargs["device_map"]
@@ -745,13 +748,12 @@ class ModelLoader:
             skip_prepare_model_for_kbit_training = True
 
         if (
+            self.is_fsdp_enabled and
             (
-                self.is_fsdp_enabled and
-                self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading
-            ) or
-            self.is_qlora_and_fsdp_enabled_and_fsdp1 or
-            is_deepspeed_zero3_enabled()
-        ):
+                self.cfg.adapter == "qlora" or
+                self.cfg.fsdp_config.cpu_ram_efficient_loading
+            )
+        ) or is_deepspeed_zero3_enabled():
             # Make sure everything is in the same dtype
             skip_prepare_model_for_kbit_training = True
 

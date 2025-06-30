@@ -8,19 +8,19 @@ strict: false
 rl: dpo
 chat_template: chatml
 
-plugins:
-  - axolotl.integrations.liger.LigerPlugin
+# plugins:
+#   - axolotl.integrations.liger.LigerPlugin
 
-liger_rope: true
-liger_rms_norm: true
-liger_glu_activation: true
-liger_layer_norm: true
-liger_fused_linear_cross_entropy: true
+# liger_rope: true
+# liger_rms_norm: true
+# liger_glu_activation: true
+# liger_layer_norm: true
+# liger_fused_linear_cross_entropy: true
 
 
 # peft_use_dora: true
 # load_in_4bit: true
-adapter: lora
+adapter: qlora
 lora_model_dir:
 lora_r: 32
 lora_alpha: 16
@@ -68,7 +68,7 @@ cosine_constant_lr_ratio: 0
 cosine_min_lr_ratio: 1.0
 learning_rate: 2e-5
 save_only_model: true
-bf16: true
+bf16: auto
 
 resume_from_checkpoint:
 logging_steps: 1
@@ -80,7 +80,11 @@ warmup_steps: 10
 weight_decay: 0.0
 
 fsdp_version: 1
+fsdp:
+  - full_shard
+  - auto_wrap
 fsdp_config:
+  fsdp_version: 1
   fsdp_offload_params: false
   fsdp_cpu_ram_efficient_loading: false
   fsdp_auto_wrap_policy: TRANSFORMER_BASED_WRAP
@@ -91,7 +95,7 @@ fsdp_config:
   # fsdp_activation_checkpointing: true
   fsdp_limit_all_gathers: true
   fsdp_sync_module_states: true
-  fsdp_use_orig_params: true
+  fsdp_use_orig_params: false
 #
 special_tokens:
   pad_token: <|end_of_text|>

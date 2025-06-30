@@ -116,7 +116,7 @@ def normalize_config(cfg):
     ]
     choose_device(cfg)
     # cfg.ddp = cfg.ddp if cfg.ddp is not None else cfg.world_size != 1
-    if cfg.ddp:
+    if cfg.world_size != 1:
         cfg.device_map = {"": int(os.environ.get("LOCAL_RANK", 0))}
         cfg.batch_size = cfg.batch_size * cfg.world_size
 
