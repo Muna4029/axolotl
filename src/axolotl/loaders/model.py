@@ -143,7 +143,7 @@ class ModelLoader:
     @property
     def is_fsdp_enabled(self):
         """Property that determines if FSDP is enabled."""
-        return self.cfg.fsdp_config is not None
+        return self.cfg.fsdp_config is not None or self.cfg.fsdp is not None
 
     @property
     def fsdp_version(self):
@@ -437,8 +437,12 @@ class ModelLoader:
 
         is_ds_zero3 = is_deepspeed_zero3_enabled()
 
-        if self.is_qlora_and_fsdp_enabled:
-            self.model_kwargs["device_map"] = "auto"
+        # FSDP requires control over device placement, so don't set device_map when FSDP is enabled
+        if self.is_fsdp_enabled:
+            # For QLoRA + FSDP, we still need to set device_map to "auto" for proper initialization
+            if self.is_qlora_and_fsdp_enabled:
+                self.model_kwargs["device_map"] = {"": torch.cuda.current_device()}
+            # For other FSDP cases, don't set device_map at all
         elif not is_ds_zero3:
             self.model_kwargs["device_map"] = device_map
 

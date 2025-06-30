@@ -1127,14 +1127,6 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
         return data
 
     @model_validator(mode="before")
-    @classmethod
-    def check_fsdp2_dpo_base_model_quant(cls, data):
-        if data.get("fsdp_config") and data.get("fsdp_version") == 2:
-            if data.get("rl") == "dpo" and (data.get("load_in_4bit") or data.get("load_in_8bit")):
-                raise ValueError("FSDP2 does not support DPO with load_in_4bit or load_in_8bit. Please use LoRA instead.")
-        return data
-
-    @model_validator(mode="before")
     def check_fsdp_version_in_fsdp_config(cls, data):
         if fsdp_config := data.get("fsdp_config"):
             if fsdp_config.get("fsdp_version"):

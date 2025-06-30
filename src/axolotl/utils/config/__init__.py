@@ -54,7 +54,7 @@ def choose_device(cfg):
     # in `accelerate launch`, we need to not pass through any device map and let
     # accelerate figure out which parts of the model to put on which gpu
     accelerate_vars = [var for var in os.environ if var.startswith("ACCELERATE_USE_")]
-    if accelerate_vars:
+    if accelerate_vars or cfg.fsdp or cfg.fsdp_config:
         cfg.device_map = None
 
 
@@ -117,7 +117,8 @@ def normalize_config(cfg):
     choose_device(cfg)
     # cfg.ddp = cfg.ddp if cfg.ddp is not None else cfg.world_size != 1
     if cfg.world_size != 1:
-        cfg.device_map = {"": int(os.environ.get("LOCAL_RANK", 0))}
+        if not (cfg.fsdp or cfg.fsdp_config):
+            cfg.device_map = {"": int(os.environ.get("LOCAL_RANK", 0))}
         cfg.batch_size = cfg.batch_size * cfg.world_size
 
     if not cfg.use_ray:

@@ -79,23 +79,22 @@ saves_per_epoch: 1
 warmup_steps: 10
 weight_decay: 0.0
 
-fsdp_version: 1
+fsdp_version: 2
 fsdp:
   - full_shard
   - auto_wrap
 fsdp_config:
-  fsdp_version: 1
   fsdp_offload_params: false
   fsdp_cpu_ram_efficient_loading: false
   fsdp_auto_wrap_policy: TRANSFORMER_BASED_WRAP
   fsdp_transformer_layer_cls_to_wrap: Qwen2DecoderLayer
   fsdp_state_dict_type: FULL_STATE_DICT
-  # fsdp_reshard_after_forward: true
+  fsdp_reshard_after_forward: true
   fsdp_sharding_strategy: FULL_SHARD
   # fsdp_activation_checkpointing: true
-  fsdp_limit_all_gathers: true
-  fsdp_sync_module_states: true
-  fsdp_use_orig_params: false
+  # fsdp_limit_all_gathers: true
+  # fsdp_sync_module_states: true
+  # fsdp_use_orig_params: true
 #
 special_tokens:
   pad_token: <|end_of_text|>
