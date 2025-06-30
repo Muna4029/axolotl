@@ -1103,8 +1103,8 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp_version(cls, data):
-        fsdp_config = data.get("fsdp_config")
-        if fsdp_config is not None and str(data.get("fsdp_version")) != "2":
+        fsdp_config = data.get("fsdp_config", {})
+        if fsdp_config and str(data.get("fsdp_version")) != "2":
             LOG.info(
                 "FSDP1 will be deprecated in an upcoming release of axolotl."
                 "We recommend that you use FSDP version 2 for better performance and compatibility. "
@@ -1128,7 +1128,7 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
 
     @model_validator(mode="before")
     @classmethod
-    def check_fsdp2_qlora_dpo(cls, data):
+    def check_fsdp2_dpo_base_model_quant(cls, data):
         if data.get("fsdp_config") and data.get("fsdp_version") == 2:
             if data.get("rl") == "dpo" and (data.get("load_in_4bit") or data.get("load_in_8bit")):
                 raise ValueError("FSDP2 does not support DPO with load_in_4bit or load_in_8bit. Please use LoRA instead.")
@@ -1142,13 +1142,6 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
                             "Please configure `fsdp_version` as a top-level field.")
         return data
 
-    @model_validator(mode="before")
-    def check_fsdp2_dpo_base_model_quant(cls, data):
-        if fsdp_config := data.get("fsdp_config") and data.get("fsdp_version") == 2:
-            if data.get("rl") and (data.get("load_in_4bit") or data.get("load_in_8bit")):
-                raise ValueError("FSDP2 does not support DPO with load_in_4bit or load_in_8bit. Please use LoRA instead.")
-        return data
-    @model_validator(mode="before")
 
     @classmethod
     def check_fsdp_config_kwargs_prefix(cls, data):

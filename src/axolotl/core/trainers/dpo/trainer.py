@@ -24,6 +24,11 @@ class AxolotlDPOTrainer(
     tag_names = ["axolotl", "dpo"]
 
     def __init__(self, *args, dataset_tags=None, **kwargs):
+        if "is_fsdp_enabled" in args:
+            args = list(args)
+            args.pop(args.index("is_fsdp_enabled"))
+        if "is_fsdp_enabled" in kwargs:
+            kwargs.pop("is_fsdp_enabled")
         super().__init__(*args, **kwargs)
 
         self.dataset_tags = dataset_tags

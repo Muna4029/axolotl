@@ -364,7 +364,7 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
         LoraLayer = None
 
     auto_wrap_policy = fsdp2_prepare_auto_wrap_policy(
-        fsdp2_plugin, auto_wrap_policy_type, model
+        fsdp2_plugin, model
     )
     log_bias_dtype_mismatch = False
     if auto_wrap_policy is not None:
@@ -372,13 +372,12 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
             ignored_params = []
             if is_peft_model and isinstance(module, LoraLayer):
                 for active_adapter in module.active_adapters:
-                    # LOG.info(f"module: {module}")
                     # Linear4Bit will keep it's bias term in fp32. If the weight dtype is in bf16 we are not able to
                     # wrap this. Therefore we must ensure the bias has the same dtype as the weight
                     if module.base_layer.bias is not None:
                         if (
-                            module.base_layer.weight.dtype
-                            != module.base_layer.bias.dtype
+                            module.base_layer.weight.dtype !=
+                            module.base_layer.bias.dtype
                         ):
                             log_bias_dtype_mismatch = True
                             module.base_layer.bias.data = (
@@ -404,14 +403,12 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
                     for name, p in module.named_parameters()
                     if "magnitude_vector" in name
                 }
-            if auto_wrap_policy(module):
+            if auto_wrap_policy(module) and not isinstance(module, FSDPModule):
                 fully_shard(module, ignored_params=ignored_params, **fsdp2_kwargs)
+
+    # if not isinstance(model, FSDPModule):
     fully_shard(model, **fsdp2_kwargs)
-    if log_bias_dtype_mismatch:
-        LOG.warning(
-            "Found dtype mismatch between weight and bias in QLoRA linear layers. Since mixed dtypes are not supported in a "
-            "single FSDP param group, the bias dtype has been coerced to match the weight dtype."
-        )
+
     if fsdp2_plugin.cpu_ram_efficient_loading:
         offload_to_cpu = isinstance(fsdp2_plugin.cpu_offload, CPUOffloadPolicy)
         fsdp2_load_full_state_dict(

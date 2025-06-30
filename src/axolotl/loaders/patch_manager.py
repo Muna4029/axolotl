@@ -95,6 +95,9 @@ class PatchManager:
             from axolotl.monkeypatch.accelerate.fsdp2 import patch_accelerate_fsdp2
 
             patch_accelerate_fsdp2()
+            if self.cfg.rl:
+                from axolotl.monkeypatch.trainer.trl import patch_trl_prepare_fsdp
+                patch_trl_prepare_fsdp()
 
     def _apply_adapter_patches(self):
         """Apply patches for adapter configurations."""

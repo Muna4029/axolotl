@@ -317,14 +317,10 @@ def prepare_plugins(cfg):
 
 # TODO @SalmanMohammadi this function in 0.12
 def migrate_fsdp_config(cfg):
-    if cfg.get("fsdp"):
-        cfg.fsdp_config = cfg.fsdp
-        del cfg.fsdp
-
     if cfg.get("fsdp_config"):
         fsdp_config_keys = cfg.fsdp_config.keys()
         if "fsdp_version" in fsdp_config_keys:
-            cfg.fsdp_version = cfg.fsdp_config.pop("fsdp_version")
+            cfg.fsdp_version = cfg.fsdp_config.get("fsdp_version")
 
         for key in list(fsdp_config_keys):
             if key.startswith("fsdp_"):

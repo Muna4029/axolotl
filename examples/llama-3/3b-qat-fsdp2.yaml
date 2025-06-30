@@ -3,9 +3,9 @@ base_model: Qwen/Qwen2.5-0.5B
 # hub_model_id: username/custom_model_name
 
 load_in_8bit: false
-# load_in_4bit: true
+load_in_4bit: true
 strict: false
-# rl: dpo
+rl: dpo
 chat_template: chatml
 
 plugins:
@@ -27,14 +27,14 @@ lora_alpha: 16
 lora_dropout: 0.05
 lora_target_linear: true
 
-datasets:
-  - path: yahma/alpaca-cleaned
-    type: alpaca
-
 # datasets:
-#   - path: Intel/orca_dpo_pairs
-#     split: train
-#     type: chatml.intel
+#   - path: yahma/alpaca-cleaned
+#     type: alpaca
+
+datasets:
+  - path: Intel/orca_dpo_pairs
+    split: train
+    type: chatml.intel
 
 
 output_dir: ./outputs/qat_out/
