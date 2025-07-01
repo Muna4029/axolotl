@@ -459,6 +459,9 @@ class ModelLoader:
         if int(os.environ.get("LOCAL_RANK", 0)) == 0:
             print(f"DEBUG: --- END OF _set_device_map_config ---")
             print(f"DEBUG: model_kwargs = {self.model_kwargs}")
+        if int(os.environ.get("LOCAL_RANK", 0)) == 1:
+            print(f"DEBUG: --- END OF _set_device_map_config ---")
+            print(f"DEBUG: model_kwargs = {self.model_kwargs}")
         # TODO: can we put the reference model on it's own gpu? I think we have to move
         # logits around to calculate loss
         # if cfg.rl:
