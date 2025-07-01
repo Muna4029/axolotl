@@ -409,6 +409,9 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     # if not isinstance(model, FSDPModule):
     fully_shard(model, **fsdp2_kwargs)
 
+    if log_bias_dtype_mismatch:
+        LOG.warning("Bias dtype mismatch detected in LoRA base linear layer, casting bias to weight dtype")
+
     if fsdp2_plugin.cpu_ram_efficient_loading:
         offload_to_cpu = isinstance(fsdp2_plugin.cpu_offload, CPUOffloadPolicy)
         fsdp2_load_full_state_dict(

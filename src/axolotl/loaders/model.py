@@ -145,11 +145,6 @@ class ModelLoader:
         """Property that determines if FSDP is enabled."""
         return self.cfg.fsdp_config is not None or self.cfg.fsdp is not None
 
-    @property
-    def fsdp_version(self):
-        """Property that determines the version of FSDP."""
-        return self.cfg.fsdp_version
-
     @cached_property
     def is_qlora_and_fsdp_enabled(self):
         """Property that determines if FSDP with QLoRA is enabled."""
@@ -616,6 +611,7 @@ class ModelLoader:
             if "device_map" in self.model_kwargs:
                 del self.model_kwargs["device_map"]
         if (
+            self.is_fsdp_enabled and
             self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading and
             (
                 self.cfg.model_config_type == "dbrx" or

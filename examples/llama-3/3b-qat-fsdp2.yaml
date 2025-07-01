@@ -59,7 +59,7 @@ wandb_watch:
 wandb_name:
 wandb_log_model:
 
-gradient_accumulation_steps: 1
+gradient_accumulation_steps: 8
 micro_batch_size: 2
 num_epochs: 1
 optimizer: adamw_torch_fused
@@ -68,7 +68,8 @@ cosine_constant_lr_ratio: 0
 cosine_min_lr_ratio: 1.0
 learning_rate: 2e-5
 save_only_model: true
-bf16: auto
+bf16: true
+tf32: true
 
 resume_from_checkpoint:
 logging_steps: 1
@@ -78,8 +79,8 @@ saves_per_epoch: 1
 
 warmup_steps: 10
 weight_decay: 0.0
-
-fsdp_version: 2
+# fsdp: true
+fsdp_version: 1
 fsdp:
   - full_shard
   - auto_wrap
@@ -91,10 +92,10 @@ fsdp_config:
   fsdp_state_dict_type: FULL_STATE_DICT
   fsdp_reshard_after_forward: true
   fsdp_sharding_strategy: FULL_SHARD
-  # fsdp_activation_checkpointing: true
-  # fsdp_limit_all_gathers: true
-  # fsdp_sync_module_states: true
-  # fsdp_use_orig_params: true
-#
+  fsdp_activation_checkpointing: true
+  fsdp_limit_all_gathers: true
+  fsdp_sync_module_states: true
+  fsdp_use_orig_params: false
+# #
 special_tokens:
   pad_token: <|end_of_text|>
