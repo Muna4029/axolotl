@@ -160,6 +160,16 @@ class ModelLoader:
             A tuple with the loaded model and its LoRA configuration (if applicable).
         """
         # Initial setup and patches
+        if int(os.environ.get("LOCAL_RANK", 0)) == 0:
+            print(f"DEBUG: --- START OF LOAD ---")
+            print(f"DEBUG: is_fsdp_enabled = {self.is_fsdp_enabled}")
+            print(f"DEBUG: is_qlora_and_fsdp_enabled = {self.is_qlora_and_fsdp_enabled}")
+            print(f"DEBUG: cfg.adapter = {self.cfg.adapter}")
+            print(f"DEBUG: cfg.load_in_4bit = {self.cfg.load_in_4bit}")
+            print(f"DEBUG: model_type = {self.model_type}")
+            print(f"DEBUG: is_deepspeed_zero3_enabled = {is_deepspeed_zero3_enabled()}")
+            print(f"DEBUG: ACCELERATE_DEEPSPEED_ZERO_STAGE = {os.getenv('ACCELERATE_DEEPSPEED_ZERO_STAGE')}")
+        # torch.distributed.barrier()
         self.patch_manager.apply_pre_model_load_patches()
         self._apply_pre_model_load_setup()
 
@@ -446,7 +456,9 @@ class ModelLoader:
                 self.model_kwargs["device_map"] = "mps:0"
             elif "npu" in str(cur_device):
                 self.model_kwargs["device_map"] = "npu:0"
-
+        if int(os.environ.get("LOCAL_RANK", 0)) == 0:
+            print(f"DEBUG: --- END OF _set_device_map_config ---")
+            print(f"DEBUG: model_kwargs = {self.model_kwargs}")
         # TODO: can we put the reference model on it's own gpu? I think we have to move
         # logits around to calculate loss
         # if cfg.rl:
@@ -606,10 +618,14 @@ class ModelLoader:
     def _build_model(self) -> bool:
         """Load model, with load strategy depending on config."""
         skip_move_to_device = False
-        if self.is_fsdp_enabled and (self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading or self.is_qlora_and_fsdp_enabled):
-            skip_move_to_device = True
-            if "device_map" in self.model_kwargs:
-                del self.model_kwargs["device_map"]
+        if self.is_fsdp_enabled:
+            if self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading:
+                skip_move_to_device = True
+                if "device_map" in self.model_kwargs:
+                    del self.model_kwargs["device_map"]
+            elif self.is_qlora_and_fsdp_enabled:
+                skip_move_to_device = True
+
         if (
             self.is_fsdp_enabled and
             self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading and
@@ -701,7 +717,9 @@ class ModelLoader:
         else:
             # Please don't remove underscore binding without reading the fn docstring.
             _ = self._configure_zero3_memory_efficient_loading()
-
+            if int(os.environ.get("LOCAL_RANK", 0)) == 0:
+                print(f"DEBUG: --- RIGHT BEFORE FINAL from_pretrained ---")
+                print(f"DEBUG: model_kwargs = {self.model_kwargs}")
             self.model = self.auto_model_loader.from_pretrained(
                 self.base_model,
                 config=self.model_config,
