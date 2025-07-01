@@ -446,7 +446,7 @@ class ModelLoader:
         if self.is_fsdp_enabled:
             # For QLoRA + FSDP, we still need to set device_map to "auto" for proper initialization
             if self.is_qlora_and_fsdp_enabled:
-                self.model_kwargs["device_map"] = {"": torch.cuda.current_device()}
+                self.model_kwargs["device_map"] = {"": int(os.environ.get("LOCAL_RANK", 0))}
             # For other FSDP cases, don't set device_map at all
         elif not is_ds_zero3:
             self.model_kwargs["device_map"] = device_map
