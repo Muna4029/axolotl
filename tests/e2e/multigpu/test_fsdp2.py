@@ -1,3 +1,6 @@
+"""Test module for FSDP2 multi-GPU functionality."""
+
+# pylint: disable=duplicate-code
 
 from pathlib import Path
 
@@ -10,7 +13,10 @@ from axolotl.utils.dict import DictDefault
 
 AXOLOTL_ROOT = Path(__file__).parent.parent.parent.parent
 
+
 class TestFSDP2:
+    """Test class for FSDP2 functionality."""
+
     @pytest.mark.parametrize(
         "fsdp_cpu_ram_efficient_loading",
         [True, False],
@@ -68,7 +74,6 @@ class TestFSDP2:
             ]
         )
 
-    
     def test_lora_sft(self, temp_dir):
         cfg = DictDefault(
             {
@@ -109,7 +114,6 @@ class TestFSDP2:
                 "bf16": True,
             }
         )
-
 
         # write cfg to yaml file
         Path(temp_dir).mkdir(parents=True, exist_ok=True)
@@ -177,7 +181,7 @@ class TestFSDP2:
 
         execute_subprocess_async(
             [
-                "axolotl", 
+                "axolotl",
                 "train",
                 str(Path(temp_dir) / "config.yaml"),
                 "--num-processes",
@@ -187,8 +191,6 @@ class TestFSDP2:
             ]
         )
 
-
-        
     def test_dpo_fft(self, temp_dir):
         cfg = DictDefault(
             {
@@ -232,7 +234,7 @@ class TestFSDP2:
 
         execute_subprocess_async(
             [
-                "axolotl", 
+                "axolotl",
                 "train",
                 str(Path(temp_dir) / "config.yaml"),
                 "--num-processes",
@@ -298,4 +300,3 @@ class TestFSDP2:
                 f"{get_torch_dist_unique_port()}",
             ]
         )
-        

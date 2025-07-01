@@ -549,7 +549,7 @@ def setup_deepspeed_env(cfg, stage=None):
 
 def setup_fsdp_envs(cfg):
     os.environ["ACCELERATE_USE_FSDP"] = "true"
-    
+
     # TODO @SalmanMohammadi remove FSDP1 args in 0.12
     if str(cfg.fsdp_version) == "2":
         os.environ["FSDP_VERSION"] = "2"
@@ -642,11 +642,7 @@ def setup_trainer(
     """
     from axolotl.core.builders import HFCausalTrainerBuilder, HFRLTrainerBuilder
 
-    if (
-        cfg.torch_compile
-        and cfg.fsdp_config
-        and str(cfg.fsdp_version) == "2"
-    ):
+    if cfg.torch_compile and cfg.fsdp_config and str(cfg.fsdp_version) == "2":
         patch_evaluation_loop_for_fsdp2()
     if cfg.rl:
         trainer_builder = HFRLTrainerBuilder(cfg, model, tokenizer, processor)

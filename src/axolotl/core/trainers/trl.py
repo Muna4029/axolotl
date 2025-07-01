@@ -1,12 +1,9 @@
 """Module for TRL RL trainers"""
 
-import torch
-from tqdm import tqdm
 from trl import (
     CPOTrainer,
     KTOTrainer,
     ORPOTrainer,
-    PPOTrainer,
     PRMTrainer,
     RewardTrainer,
 )

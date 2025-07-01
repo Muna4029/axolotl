@@ -15,7 +15,6 @@ from typing import Any, Dict
 
 import torch
 import transformers.modelcard
-from accelerate.utils import save_fsdp_model
 from datasets import Dataset
 from huggingface_hub.errors import OfflineModeIsEnabled
 from peft import PeftConfig, PeftModel
@@ -78,7 +77,7 @@ def setup_model_and_tokenizer(
         processor = load_processor(cfg, tokenizer)
 
     # Load the model
-    LOG.debug(f"Loading model")
+    LOG.debug("Loading model")
 
     model_loader = ModelLoader(cfg, tokenizer, processor=processor)
     model, peft_config = model_loader.load()

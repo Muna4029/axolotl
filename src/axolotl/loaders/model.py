@@ -148,10 +148,7 @@ class ModelLoader:
     @cached_property
     def is_qlora_and_fsdp_enabled(self):
         """Property that determines if FSDP with QLoRA is enabled."""
-        return (
-            self.is_fsdp_enabled and
-            self.cfg.adapter == "qlora"
-        )
+        return self.is_fsdp_enabled and self.cfg.adapter == "qlora"
 
     def load(self) -> tuple[PreTrainedModel | PeftModelForCausalLM, PeftConfig | None]:
         """Load and prepare the model with all configurations and patches.
@@ -161,14 +158,18 @@ class ModelLoader:
         """
         # Initial setup and patches
         if int(os.environ.get("LOCAL_RANK", 0)) == 0:
-            print(f"DEBUG: --- START OF LOAD ---")
+            print("DEBUG: --- START OF LOAD ---")
             print(f"DEBUG: is_fsdp_enabled = {self.is_fsdp_enabled}")
-            print(f"DEBUG: is_qlora_and_fsdp_enabled = {self.is_qlora_and_fsdp_enabled}")
+            print(
+                f"DEBUG: is_qlora_and_fsdp_enabled = {self.is_qlora_and_fsdp_enabled}"
+            )
             print(f"DEBUG: cfg.adapter = {self.cfg.adapter}")
             print(f"DEBUG: cfg.load_in_4bit = {self.cfg.load_in_4bit}")
             print(f"DEBUG: model_type = {self.model_type}")
             print(f"DEBUG: is_deepspeed_zero3_enabled = {is_deepspeed_zero3_enabled()}")
-            print(f"DEBUG: ACCELERATE_DEEPSPEED_ZERO_STAGE = {os.getenv('ACCELERATE_DEEPSPEED_ZERO_STAGE')}")
+            print(
+                f"DEBUG: ACCELERATE_DEEPSPEED_ZERO_STAGE = {os.getenv('ACCELERATE_DEEPSPEED_ZERO_STAGE')}"
+            )
         # torch.distributed.barrier()
         self.patch_manager.apply_pre_model_load_patches()
         self._apply_pre_model_load_setup()
@@ -208,8 +209,8 @@ class ModelLoader:
         """Configure the model after it has been loaded."""
         # Handle PeftModel if needed
         if (
-            isinstance(self.model, (peft.PeftModel, peft.PeftModelForCausalLM)) and
-            not self.is_qlora_and_fsdp_enabled
+            isinstance(self.model, (peft.PeftModel, peft.PeftModelForCausalLM))
+            and not self.is_qlora_and_fsdp_enabled
         ):
             self.model = self.model.merge_and_unload()
 
@@ -217,7 +218,7 @@ class ModelLoader:
         self._adjust_model_config()
         self._configure_embedding_dtypes()
         self._configure_qat()
-        log_gpu_memory_usage(LOG, "Memory usage after model load", 0)
+        log_gpu_memory_usage(LOG.logger, "Memory usage after model load", 0)
 
     def _resize_token_embeddings(self):
         """Resize token embeddings if needed."""
@@ -227,10 +228,10 @@ class ModelLoader:
             else len(self.tokenizer)
         )
         if hasattr(self.model, "get_input_embeddings") and (
-            self.model.get_input_embeddings().num_embeddings < embeddings_len or
-            (
-                self.model.get_input_embeddings().num_embeddings > embeddings_len and
-                self.cfg.shrink_embeddings
+            self.model.get_input_embeddings().num_embeddings < embeddings_len
+            or (
+                self.model.get_input_embeddings().num_embeddings > embeddings_len
+                and self.cfg.shrink_embeddings
             )
         ):
             resize_kwargs = {}
@@ -244,10 +245,10 @@ class ModelLoader:
 
     def _adjust_model_config(self):
         if (
-            hasattr(self.model, "config") and
-            hasattr(self.model.config, "max_position_embeddings") and
-            self.model.config.max_position_embeddings and
-            self.cfg.sequence_len > self.model.config.max_position_embeddings
+            hasattr(self.model, "config")
+            and hasattr(self.model.config, "max_position_embeddings")
+            and self.model.config.max_position_embeddings
+            and self.cfg.sequence_len > self.model.config.max_position_embeddings
         ):
             LOG.warning(
                 "increasing model.config.max_position_embeddings from "
@@ -256,18 +257,18 @@ class ModelLoader:
             self.model.config.max_position_embeddings = self.cfg.sequence_len
 
         if (
-            hasattr(self.model, "config") and
-            hasattr(self.model.config, "bos_token_id") and
-            self.model.config.bos_token_id and
-            self.model.config.bos_token_id != self.tokenizer.bos_token_id
+            hasattr(self.model, "config")
+            and hasattr(self.model.config, "bos_token_id")
+            and self.model.config.bos_token_id
+            and self.model.config.bos_token_id != self.tokenizer.bos_token_id
         ):
             self.model.config.bos_token_id = self.tokenizer.bos_token_id
 
         if (
-            hasattr(self.model, "config") and
-            hasattr(self.model.config, "eos_token_id") and
-            self.model.config.eos_token_id and
-            self.model.config.eos_token_id != self.tokenizer.eos_token_id
+            hasattr(self.model, "config")
+            and hasattr(self.model.config, "eos_token_id")
+            and self.model.config.eos_token_id
+            and self.model.config.eos_token_id != self.tokenizer.eos_token_id
         ):
             self.model.config.eos_token_id = self.tokenizer.eos_token_id
 
@@ -308,11 +309,14 @@ class ModelLoader:
             # LlamaRMSNorm layers are in fp32 after kbit_training or full finetune, so
             # we need to convert them back to fp16/bf16 for flash-attn compatibility.
             (
-                (needs_fa2_dtype or self.cfg.flash_attention or self.cfg.flex_attention) and
-                not self.is_fsdp_enabled and self.cfg.adapter == "qlora"
-            ) or
-            # CCE requires embedding layers to be in fp16/bf16 for backward pass
-            self.cfg.cut_cross_entropy
+                (needs_fa2_dtype or self.cfg.flash_attention or self.cfg.flex_attention)
+                and not self.is_fsdp_enabled
+                and self.cfg.adapter == "qlora"
+            )
+            or (
+                # CCE requires embedding layers to be in fp16/bf16 for backward pass
+                self.cfg.cut_cross_entropy
+            )
         )
 
         if should_convert:
@@ -345,9 +349,9 @@ class ModelLoader:
             # for training. Then, the DPO trainer doesn't want the PEFT model loaded
             # over it, it just wants the LoRA / PEFT config.
             if (
-                self.cfg.adapter and
-                self.cfg.rl in [RLType.DPO, RLType.IPO, RLType.KTO] and
-                not self.cfg.merge_lora
+                self.cfg.adapter
+                and self.cfg.rl in [RLType.DPO, RLType.IPO, RLType.KTO]
+                and not self.cfg.merge_lora
             ):
                 _, lora_config = load_lora(
                     self.model, self.cfg, inference=False, config_only=True
@@ -363,10 +367,10 @@ class ModelLoader:
         """Apply final optimizations and patches."""
         # Place model on accelerator
         if (
-            self.cfg.ddp and
-            not self.cfg.load_in_8bit and
-            not (self.cfg.rl and self.cfg.load_in_4bit) and
-            not skip_move_to_device
+            self.cfg.ddp
+            and not self.cfg.load_in_8bit
+            and not (self.cfg.rl and self.cfg.load_in_4bit)
+            and not skip_move_to_device
         ):
             self.model.to(f"{str(get_device_type())}:{self.cfg.local_rank}")
 
@@ -386,7 +390,7 @@ class ModelLoader:
             self.model = BetterTransformer.transform(self.model)
 
         if self.cfg.adapter is not None:
-            log_gpu_memory_usage(LOG, "after adapters", self.model.device)
+            log_gpu_memory_usage(LOG.logger, "after adapters", self.model.device)
 
         for _ in range(3):
             gc.collect()
@@ -446,7 +450,9 @@ class ModelLoader:
         if self.is_fsdp_enabled:
             # For QLoRA + FSDP, we still need to set device_map to "auto" for proper initialization
             if self.is_qlora_and_fsdp_enabled:
-                self.model_kwargs["device_map"] = {"": int(os.environ.get("LOCAL_RANK", 0))}
+                self.model_kwargs["device_map"] = {
+                    "": int(os.environ.get("LOCAL_RANK", 0))
+                }
             # For other FSDP cases, don't set device_map at all
         elif not is_ds_zero3:
             self.model_kwargs["device_map"] = device_map
@@ -457,10 +463,10 @@ class ModelLoader:
             elif "npu" in str(cur_device):
                 self.model_kwargs["device_map"] = "npu:0"
         if int(os.environ.get("LOCAL_RANK", 0)) == 0:
-            print(f"DEBUG: --- END OF _set_device_map_config ---")
+            print("DEBUG: --- END OF _set_device_map_config ---")
             print(f"DEBUG: model_kwargs = {self.model_kwargs}")
         if int(os.environ.get("LOCAL_RANK", 0)) == 1:
-            print(f"DEBUG: --- END OF _set_device_map_config ---")
+            print("DEBUG: --- END OF _set_device_map_config ---")
             print(f"DEBUG: model_kwargs = {self.model_kwargs}")
         # TODO: can we put the reference model on it's own gpu? I think we have to move
         # logits around to calculate loss
@@ -492,9 +498,9 @@ class ModelLoader:
                     **self.model_config.quantization_config
                 )
         if (
-            self.cfg.adapter in ["qlora", "lora"] and
-            hasattr(self.model_config, "quantization_config") and
-            self.model_config.quantization_config["quant_method"]
+            self.cfg.adapter in ["qlora", "lora"]
+            and hasattr(self.model_config, "quantization_config")
+            and self.model_config.quantization_config["quant_method"]
             in ["gptq", "awq", "bitsandbytes"]
         ):
             if self.model_config.quantization_config["quant_method"] == "gptq":
@@ -604,9 +610,9 @@ class ModelLoader:
             )
             hf_ds_cfg.fill_match(
                 "train_batch_size",
-                int(os.getenv("WORLD_SIZE", "1")) *
-                self.cfg.micro_batch_size *
-                self.cfg.gradient_accumulation_steps,
+                int(os.getenv("WORLD_SIZE", "1"))
+                * self.cfg.micro_batch_size
+                * self.cfg.gradient_accumulation_steps,
             )
             if "device_map" in self.model_kwargs:
                 del self.model_kwargs["device_map"]
@@ -630,11 +636,11 @@ class ModelLoader:
                 skip_move_to_device = True
 
         if (
-            self.is_fsdp_enabled and
-            self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading and
-            (
-                self.cfg.model_config_type == "dbrx" or
-                self.cfg.qlora_sharded_model_loading
+            self.is_fsdp_enabled
+            and self.cfg.fsdp_config.fsdp_cpu_ram_efficient_loading
+            and (
+                self.cfg.model_config_type == "dbrx"
+                or self.cfg.qlora_sharded_model_loading
             )
         ):
             quant_storage = self.cfg.torch_dtype
@@ -653,9 +659,9 @@ class ModelLoader:
             )
             skip_move_to_device = True
         elif (
-            self.model_config.model_type in ["llama", "llama4"] and
-            not self.cfg.trust_remote_code and
-            not self.cfg.gptq
+            self.model_config.model_type in ["llama", "llama4"]
+            and not self.cfg.trust_remote_code
+            and not self.cfg.gptq
         ):
             # Please don't remove underscore binding without reading the fn docstring.
             _ = self._configure_zero3_memory_efficient_loading()
@@ -692,9 +698,9 @@ class ModelLoader:
                 **self.model_kwargs,
             )
         elif (
-            self.model_type and
-            self.model_type != "AutoModelForCausalLM" and
-            not self.cfg.trust_remote_code
+            self.model_type
+            and self.model_type != "AutoModelForCausalLM"
+            and not self.cfg.trust_remote_code
         ):
             if self.cfg.gptq:
                 self.model = self.auto_model_loader.from_pretrained(
@@ -721,7 +727,7 @@ class ModelLoader:
             # Please don't remove underscore binding without reading the fn docstring.
             _ = self._configure_zero3_memory_efficient_loading()
             if int(os.environ.get("LOCAL_RANK", 0)) == 0:
-                print(f"DEBUG: --- RIGHT BEFORE FINAL from_pretrained ---")
+                print("DEBUG: --- RIGHT BEFORE FINAL from_pretrained ---")
                 print(f"DEBUG: model_kwargs = {self.model_kwargs}")
             self.model = self.auto_model_loader.from_pretrained(
                 self.base_model,
@@ -761,27 +767,27 @@ class ModelLoader:
             skip_prepare_model_for_kbit_training = True
 
         loftq_bits = (
-            self.cfg.peft and
-            self.cfg.peft.loftq_config and
-            self.cfg.peft.loftq_config.loftq_bits
+            self.cfg.peft
+            and self.cfg.peft.loftq_config
+            and self.cfg.peft.loftq_config.loftq_bits
         )
         if self.cfg.adapter == "lora" and loftq_bits:
             skip_prepare_model_for_kbit_training = True
 
         if (
-            self.is_fsdp_enabled and
-            (
-                self.cfg.adapter == "qlora" or
-                self.cfg.fsdp_config.cpu_ram_efficient_loading
+            self.is_fsdp_enabled
+            and (
+                self.cfg.adapter == "qlora"
+                or self.cfg.fsdp_config.cpu_ram_efficient_loading
             )
         ) or is_deepspeed_zero3_enabled():
             # Make sure everything is in the same dtype
             skip_prepare_model_for_kbit_training = True
 
         if (
-            not skip_prepare_model_for_kbit_training and
-            self.cfg.adapter in ["lora", "qlora"] and
-            (self.cfg.load_in_8bit or self.cfg.load_in_4bit)
+            not skip_prepare_model_for_kbit_training
+            and self.cfg.adapter in ["lora", "qlora"]
+            and (self.cfg.load_in_8bit or self.cfg.load_in_4bit)
         ):
             LOG.info("converting PEFT model w/ prepare_model_for_kbit_training")
             self.model = prepare_model_for_kbit_training(

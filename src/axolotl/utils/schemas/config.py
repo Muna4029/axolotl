@@ -547,7 +547,7 @@ class AxolotlInputConfig(
     fsdp: list[str] | None = Field(
         default=None,
         json_schema_extra={"description": "FSDP configuration"},
-        deprecation_message="Configuring FSDP using `fsdp` is deprecated. Please use `fsdp_config` instead.",
+        deprecated="Configuring FSDP using `fsdp` is deprecated. Please use `fsdp_config` instead.",
     )
     # TODO @SalmanMohammadi strongly type this as its own schema
     fsdp_config: dict[str, Any] | None = Field(
@@ -561,7 +561,7 @@ class AxolotlInputConfig(
         Literal["FULL_STATE_DICT", "LOCAL_STATE_DICT", "SHARDED_STATE_DICT"] | None
     ) = Field(
         default=None,
-        deprecation_message="Configuring FSDP final state dict type using `fsdp_final_state_dict_type` is deprecated. Please use `fsdp_config.final_state_dict_type` instead.",
+        deprecated="Configuring FSDP final state dict type using `fsdp_final_state_dict_type` is deprecated. Please use `fsdp_config.final_state_dict_type` instead.",
     )
 
     val_set_size: float | None = Field(
@@ -1086,10 +1086,7 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
 
             torch_version = str(torch.__version__).split("+", maxsplit=1)[0]
 
-        if (
-            data.get("fsdp_config")
-            and str(data.get("fsdp_version")) == "2"
-        ):
+        if data.get("fsdp_config") and str(data.get("fsdp_version")) == "2":
             if version.parse(torch_version) < version.parse("2.7.0"):
                 raise ValueError(
                     "FSDP2 and QAT are not supported on torch version < 2.7.0"
@@ -1129,27 +1126,36 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp2_base_model_quant_dpo(cls, data):
-        if data.get("fsdp_version") == 2 and data.get("rl") in [RLType.DPO, RLType.KTO, RLType.ORPO]:
+        if data.get("fsdp_version") == 2 and data.get("rl") in [
+            RLType.DPO,
+            RLType.KTO,
+            RLType.ORPO,
+        ]:
             if data.get("load_in_8bit") or data.get("load_in_4bit"):
                 raise ValueError(
                     "FSDP2 does not support load_in_8bit or load_in_4bit with DPO. Please use DeepSpeed or set `fsdp_version` to 1."
                 )
 
         return data
+
     @model_validator(mode="before")
+    @classmethod
     def check_fsdp_version_in_fsdp_config(cls, data):
         if fsdp_config := data.get("fsdp_config"):
             if fsdp_config.get("fsdp_version"):
-                LOG.warning("Configuring `fsdp_version` in `fsdp_config` is deprecated. "
-                            "Please configure `fsdp_version` as a top-level field.")
+                LOG.warning(
+                    "Configuring `fsdp_version` in `fsdp_config` is deprecated. "
+                    "Please configure `fsdp_version` as a top-level field."
+                )
         return data
-
 
     @classmethod
     def check_fsdp_config_kwargs_prefix(cls, data):
         if fsdp_config := data.get("fsdp_config"):
-            for key, value in fsdp_config.items():
+            for key, _ in fsdp_config.items():
                 if key.startswith("fsdp_"):
-                    LOG.warning_once("Configuring FSDP fields with the `fsdp_` prefix is deprecated. "
-                                     "Please omit the `fsdp_` prefix from the any fields in `fsdp_config`.")
+                    LOG.warning_once(
+                        "Configuring FSDP fields with the `fsdp_` prefix is deprecated. "
+                        "Please omit the `fsdp_` prefix from the any fields in `fsdp_config`."
+                    )
         return data

@@ -1,21 +1,22 @@
+"""Test module for FSDP1 multi-GPU functionality."""
+
+# pylint: disable=duplicate-code
+
 from pathlib import Path
 
 import pytest
-import transformers
 import yaml
 from accelerate.test_utils import execute_subprocess_async
-from huggingface_hub import snapshot_download
-from packaging import version
 from transformers.testing_utils import get_torch_dist_unique_port
 
 from axolotl.utils.dict import DictDefault
-
-from tests.e2e.utils import check_tensorboard, require_torch_2_6_0
 
 AXOLOTL_ROOT = Path(__file__).parent.parent.parent.parent
 
 
 class TestFSDP1:
+    """Test class for FSDP1 functionality."""
+
     @pytest.mark.parametrize(
         "fsdp_cpu_ram_efficient_loading",
         [True, False],

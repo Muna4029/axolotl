@@ -5,7 +5,7 @@ monkeypatch for accelerate fsdp2 fix when modifying ordereddict during interatio
 import sys
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from axolotl.utils.bench import log_gpu_memory_usage
 from axolotl.utils.logging import get_logger
@@ -14,7 +14,7 @@ LOG = get_logger(__name__)
 
 
 def fsdp2_load_full_state_dict(
-    accelerator, model: torch.nn.Module, full_sd: dict, offload_to_cpu: bool = False
+    _accelerator, model: torch.nn.Module, full_sd: dict, offload_to_cpu: bool = False
 ):
     """
     Loads the full state dict (could be only on rank 0) into the sharded model. This is done by broadcasting the
@@ -252,6 +252,39 @@ def get_state_dict(self, model, unwrap=True):
     return state_dict
 
 
+def _process_lora_module_for_fsdp(module, fsdp2_kwargs):
+    """Helper function to process LoRA modules for FSDP2."""
+    from torch.distributed.fsdp import fully_shard
+
+    log_bias_dtype_mismatch = False
+    ignored_params = []
+
+    for active_adapter in module.active_adapters:
+        # Linear4Bit will keep it's bias term in fp32. If the weight dtype is in bf16 we are not able to
+        # wrap this. Therefore we must ensure the bias has the same dtype as the weight
+        if module.base_layer.bias is not None:
+            if module.base_layer.weight.dtype != module.base_layer.bias.dtype:
+                log_bias_dtype_mismatch = True
+                module.base_layer.bias.data = module.base_layer.bias.data.to(
+                    module.base_layer.weight.dtype
+                )
+
+        if module.lora_A:
+            fully_shard(module.lora_A[active_adapter], **fsdp2_kwargs)
+        if module.lora_B:
+            fully_shard(module.lora_B[active_adapter], **fsdp2_kwargs)
+        if module.lora_embedding_A:
+            fully_shard(module.lora_embedding_A[active_adapter], **fsdp2_kwargs)
+        if module.lora_embedding_B:
+            fully_shard(module.lora_embedding_B[active_adapter], **fsdp2_kwargs)
+
+    ignored_params = {
+        p for name, p in module.named_parameters() if "magnitude_vector" in name
+    }
+
+    return log_bias_dtype_mismatch, ignored_params
+
+
 def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     """Prepares the model for FSDP2 in-place. Also returns the model to avoid misuse of the original model.
 
@@ -276,7 +309,8 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     )
 
     is_type_fsdp = isinstance(model, FSDPModule) or (
-        is_compiled_module(model) and isinstance(model._orig_mod, FSDPModule)
+        is_compiled_module(model)
+        and isinstance(model._orig_mod, FSDPModule)  # pylint: disable=protected-access
     )
     if is_type_fsdp:
         return model
@@ -292,11 +326,10 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
 
     # We need the `auto_wrap_policy` original type to create a custom poilicy function for sharding
     # This is because `fully_shard` doesn't support old auto wrap policies, rather we have to imitate the behaviour
-    auto_wrap_policy_type = None
     if fsdp2_plugin.auto_wrap_policy is transformer_auto_wrap_policy:
-        auto_wrap_policy_type = "transformer"
+        pass  # auto_wrap_policy_type = "transformer"
     elif fsdp2_plugin.auto_wrap_policy is size_based_auto_wrap_policy:
-        auto_wrap_policy_type = "size"
+        pass  # auto_wrap_policy_type = "size"
 
     # We set `auto_wrap_policy` to `functools.partial` to avoid creating it again
     # This is because of `apply_activation_checkpointing` which will can reuse this function
@@ -327,7 +360,7 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     }
 
     model_has_params4bit = False
-    for name, param in model.named_parameters():
+    for _, param in model.named_parameters():
         # this is a temporary fix whereby loading models with bnb params cannot be moved from
         # GPU to a meta device due with FSDP2 because torch operations don't return the original class type
         # bypassing the move to meta will still cause the VRAM spike, but at least it still will load
@@ -360,49 +393,23 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     is_peft_model = "Peft" in model.__class__.__name__
     if is_peft_model:
         from peft.tuners.lora import LoraLayer
-    else:
-        LoraLayer = None
 
-    auto_wrap_policy = fsdp2_prepare_auto_wrap_policy(
-        fsdp2_plugin, model
-    )
+        lora_layer = LoraLayer
+    else:
+        lora_layer = None
+
+    auto_wrap_policy = fsdp2_prepare_auto_wrap_policy(fsdp2_plugin, model)
     log_bias_dtype_mismatch = False
     if auto_wrap_policy is not None:
         for module in get_module_children_bottom_up(model)[:-1]:
             ignored_params = []
-            if is_peft_model and isinstance(module, LoraLayer):
-                for active_adapter in module.active_adapters:
-                    # Linear4Bit will keep it's bias term in fp32. If the weight dtype is in bf16 we are not able to
-                    # wrap this. Therefore we must ensure the bias has the same dtype as the weight
-                    if module.base_layer.bias is not None:
-                        if (
-                            module.base_layer.weight.dtype !=
-                            module.base_layer.bias.dtype
-                        ):
-                            log_bias_dtype_mismatch = True
-                            module.base_layer.bias.data = (
-                                module.base_layer.bias.data.to(
-                                    module.base_layer.weight.dtype
-                                )
-                            )
-
-                    if module.lora_A:
-                        fully_shard(module.lora_A[active_adapter], **fsdp2_kwargs)
-                    if module.lora_B:
-                        fully_shard(module.lora_B[active_adapter], **fsdp2_kwargs)
-                    if module.lora_embedding_A:
-                        fully_shard(
-                            module.lora_embedding_A[active_adapter], **fsdp2_kwargs
-                        )
-                    if module.lora_embedding_B:
-                        fully_shard(
-                            module.lora_embedding_B[active_adapter], **fsdp2_kwargs
-                        )
-                ignored_params = {
-                    p
-                    for name, p in module.named_parameters()
-                    if "magnitude_vector" in name
-                }
+            if is_peft_model and isinstance(module, lora_layer):
+                module_log_bias_mismatch, ignored_params = (
+                    _process_lora_module_for_fsdp(module, fsdp2_kwargs)
+                )
+                log_bias_dtype_mismatch = (
+                    log_bias_dtype_mismatch or module_log_bias_mismatch
+                )
             if auto_wrap_policy(module) and not isinstance(module, FSDPModule):
                 fully_shard(module, ignored_params=ignored_params, **fsdp2_kwargs)
 
@@ -410,7 +417,9 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     fully_shard(model, **fsdp2_kwargs)
 
     if log_bias_dtype_mismatch:
-        LOG.warning("Bias dtype mismatch detected in LoRA base linear layer, casting bias to weight dtype")
+        LOG.warning(
+            "Bias dtype mismatch detected in LoRA base linear layer, casting bias to weight dtype"
+        )
 
     if fsdp2_plugin.cpu_ram_efficient_loading:
         offload_to_cpu = isinstance(fsdp2_plugin.cpu_offload, CPUOffloadPolicy)

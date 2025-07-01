@@ -106,7 +106,7 @@ class GPUStatsCallback(
         **kwargs,
     ):
         if not self.logged and state.global_step > 1:
-            log_gpu_memory_usage(LOG, "while training", self.cfg.device)
+            log_gpu_memory_usage(LOG.logger, "while training", self.cfg.device)
             self.logged = True
         return control
 

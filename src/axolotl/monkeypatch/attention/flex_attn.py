@@ -51,13 +51,14 @@ def patch_flex_wrapper(**flex_attn_compile_kwargs):
                 # see https://github.com/pytorch/pytorch/issues/146260 for training
                 self.training = training
                 LOG.info(
-                    f"Compiling flex attention with kwargs: {flex_attn_compile_kwargs}. This may take a while..."
+                    "Compiling flex attention with kwargs: %s. This may take a while...",
+                    flex_attn_compile_kwargs,
                 )
                 self._compiled_flex_attention = torch.compile(
                     flex_attention,
                     **flex_attn_compile_kwargs,
                 )
-                LOG.info(f"Flex attention compiled successfully.")
+                LOG.info("Flex attention compiled successfully.")
                 self._is_flex_compiled = True
 
         def __call__(self):

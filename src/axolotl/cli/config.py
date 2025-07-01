@@ -16,10 +16,10 @@ from transformers.utils import is_torch_bf16_gpu_available
 from axolotl.integrations.base import PluginManager
 from axolotl.utils.comet_ import setup_comet_env_vars
 from axolotl.utils.config import (
+    migrate_fsdp_config,
     normalize_cfg_datasets,
     normalize_config,
     validate_config,
-    migrate_fsdp_config,
 )
 from axolotl.utils.dict import DictDefault
 from axolotl.utils.logging import get_logger
