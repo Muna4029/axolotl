@@ -1178,3 +1178,23 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
                         "Please omit the `fsdp_` prefix from the any fields in `fsdp_config`."
                     )
         return data
+
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_fsdp2_lora_torch_2_7(cls, data):
+        
+        if data.get("fsdp_version") == 2 and data.get("fsdp_config") and data.get("adapter") == "lora":
+
+            env_capabilities = data.get("env_capabilities", {})
+            torch_version = env_capabilities.get("torch_version")
+
+            if torch_version is None:
+                import torch
+
+            torch_version = str(torch.__version__).split("+", maxsplit=1)[0]
+            if version.parse(torch_version) < version.parse("2.7.0"):
+                raise ValueError(
+                    "FSDP2 does not support LoRA with torch version < 2.7.0"
+                )
+        return data

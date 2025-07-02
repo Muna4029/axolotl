@@ -407,11 +407,12 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
                 module_log_bias_mismatch, ignored_params = (
                     _process_lora_module_for_fsdp(module, fsdp2_kwargs)
                 )
-                log_bias_dtype_mismatch = (
-                    log_bias_dtype_mismatch or module_log_bias_mismatch
-                )
+                log_bias_dtype_mismatch |= module_log_bias_mismatch
             if auto_wrap_policy(module) and not isinstance(module, FSDPModule):
-                fully_shard(module, ignored_params=ignored_params, **fsdp2_kwargs)
+                if ignored_params:
+                    fully_shard(module, ignored_params=ignored_params, **fsdp2_kwargs)
+                else:
+                    fully_shard(module, **fsdp2_kwargs)
 
     # if not isinstance(model, FSDPModule):
     fully_shard(model, **fsdp2_kwargs)
