@@ -978,7 +978,7 @@ class ComplexValidationMixin:
             if self.adapter not in ("lora", "qlora"):
                 raise ValueError("cfg.adapter must be lora or qlora to use ReLoRA")
 
-            if self.fsdp:
+            if self.fsdp or self.fsdp_config:
                 raise ValueError("fsdp not supported with ReLoRA")
 
             if self.deepspeed:

@@ -348,6 +348,7 @@ class TestMultiGPULlama:
                 "optimizer": "adamw_torch_fused",
                 "lr_scheduler": "cosine",
                 "flash_attention": True,
+                "fsdp_version": 1,
                 "fsdp_config": {
                     "fsdp_limit_all_gathers": True,
                     "fsdp_offload_params": False,
@@ -418,6 +419,7 @@ class TestMultiGPULlama:
                 "optimizer": "adamw_torch_fused",
                 "lr_scheduler": "cosine",
                 "flash_attention": True,
+                "fsdp_version": 1,
                 "fsdp_config": {
                     "fsdp_limit_all_gathers": True,
                     "fsdp_offload_params": False,
@@ -494,9 +496,8 @@ class TestMultiGPULlama:
                 "learning_rate": 0.00001,
                 "optimizer": "adamw_torch_8bit",
                 "lr_scheduler": "cosine",
+                "fsdp_version": 2,
                 "fsdp_config": {
-                    "fsdp_version": 2,
-                    # "fsdp_forward_prefetch": True,  # not yet implemented in accelerate
                     "fsdp_offload_params": False,
                     "fsdp_cpu_ram_efficient_loading": False,
                     "fsdp_transformer_layer_cls_to_wrap": "LlamaDecoderLayer",
@@ -571,6 +572,7 @@ class TestMultiGPULlama:
                 "optimizer": "adamw_torch_fused",
                 "lr_scheduler": "cosine",
                 "flash_attention": True,
+                "fsdp_version": 1,
                 "fsdp_config": {
                     "fsdp_limit_all_gathers": True,
                     "fsdp_offload_params": False,
