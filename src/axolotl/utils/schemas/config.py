@@ -50,8 +50,6 @@ from axolotl.utils.schemas.vllm import VllmConfig
 
 LOG = get_logger(__name__)
 
-SUPPORTED_METRICS = {"sacrebleu", "comet", "ter", "chrf", "perplexity"}
-
 
 # pylint: disable=too-many-ancestors
 class AxolotlInputConfig(
