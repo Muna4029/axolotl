@@ -65,7 +65,7 @@ class PatchManager:
         self._apply_mistral_cross_entropy_patch()
         self._apply_self_attention_lora_patch()
         self._apply_gemma3_conditional_generation_forward_patch()
-        self._apply_sequence_parallel_patches()
+        # self._apply_sequence_parallel_patches()
         self._apply_tiled_mlp(self.cfg.model_config_type)
 
     def apply_post_model_load_patches(self, model: PreTrainedModel):
