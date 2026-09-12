@@ -133,9 +133,8 @@ def get_state_dict(self, model, unwrap=True):
                 state_dict[param_name] = param.cpu()
             torch.distributed.barrier()
     elif self.distributed_type == DistributedType.FSDP:
-        from torch.distributed.fsdp import FullStateDictConfig
+        from torch.distributed.fsdp import FullStateDictConfig, StateDictType
         from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-        from torch.distributed.fsdp import StateDictType
 
         full_state_dict_config = FullStateDictConfig(
             offload_to_cpu=True, rank0_only=True
@@ -155,9 +154,6 @@ def get_state_dict(self, model, unwrap=True):
 def _process_lora_module_for_fsdp(module, fsdp2_kwargs):
     """Helper function to process LoRA modules for FSDP2."""
     from torch.distributed.fsdp import fully_shard
-    from torch.distributed.tensor import DTensor, distribute_module
-
-    log_bias_dtype_mismatch = False
 
     # Linear4Bit will keep it's bias term in fp32. If the weight dtype is in bf16 we are not able to
     # wrap this. Therefore we must ensure the bias has the same dtype as the weight
@@ -206,8 +202,8 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     )
 
     is_type_fsdp = isinstance(model, FSDPModule) or (
-        is_compiled_module(model) and
-        isinstance(model._orig_mod, FSDPModule)  # pylint: disable=protected-access
+        is_compiled_module(model)
+        and isinstance(model._orig_mod, FSDPModule)  # pylint: disable=protected-access
     )
     if is_type_fsdp:
         return model
@@ -300,8 +296,8 @@ def fsdp2_prepare_model(accelerator, model: torch.nn.Module) -> torch.nn.Module:
     if auto_wrap_policy is not None:
         for module in get_module_children_bottom_up(model)[:-1]:
             if is_peft_model and isinstance(module, lora_layer):
-                module_log_bias_mismatch = (
-                    _process_lora_module_for_fsdp(module, fsdp2_kwargs)
+                module_log_bias_mismatch = _process_lora_module_for_fsdp(
+                    module, fsdp2_kwargs
                 )
                 log_bias_dtype_mismatch |= module_log_bias_mismatch
                 # torch.distributed.breakpoint()
