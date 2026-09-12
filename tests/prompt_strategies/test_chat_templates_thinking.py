@@ -6,9 +6,7 @@ import pytest
 from datasets import Dataset
 from transformers import AutoTokenizer
 
-from axolotl.prompt_strategies.chat_template import (
-    load,
-)
+from axolotl.prompt_strategies.chat_template import load
 from axolotl.utils.dict import DictDefault
 
 

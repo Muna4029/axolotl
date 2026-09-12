@@ -5,7 +5,7 @@ HF Chat Templates prompt strategy
 # pylint: disable=too-many-lines
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, Set, Union
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 from transformers import ProcessorMixin
@@ -81,7 +81,7 @@ class ChatTemplatePrompter(Prompter):
         self.drop_system_message = drop_system_message
 
     @property
-    def chat_template_msg_variables(self) -> Set[str]:
+    def chat_template_msg_variables(self) -> set[str]:
         return self._chat_template_msg_variables
 
     def build_prompt(
@@ -137,8 +137,8 @@ class ChatTemplatePrompter(Prompter):
         )
 
     def get_offsets_for_train_detail(
-        self, text: str, train_details: List[Dict], mask_untrainable: bool = True
-    ) -> List[int]:
+        self, text: str, train_details: list[dict], mask_untrainable: bool = True
+    ) -> list[int]:
         tokenized_output = self.tokenizer(
             text, return_offsets_mapping=True, add_special_tokens=False
         )
@@ -181,8 +181,8 @@ class ChatTemplatePrompter(Prompter):
         return result
 
     def adjust_train_details(
-        self, train_details: List[Dict], token_offsets: List[tuple]
-    ) -> List[Dict]:
+        self, train_details: list[dict], token_offsets: list[tuple]
+    ) -> list[dict]:
         adjusted_details = []
         for detail in train_details:
             begin_offset = detail["begin_offset"]
@@ -240,7 +240,7 @@ class ChatTemplatePrompter(Prompter):
 
     def get_chat_template_msg_variables(
         self, chat_template: str, field_messages: str
-    ) -> Set[str]:
+    ) -> set[str]:
         template_analyzer = JinjaTemplateAnalyzer(chat_template)
         return template_analyzer.get_message_vars(field_messages)
 
@@ -378,17 +378,20 @@ class ChatTemplateStrategy(PromptTokenizingStrategy):
         """
         Public method that can handle either a single prompt or a batch of prompts.
         """
+
         def _remove_none_values(obj):
             if hasattr(obj, "items"):
-                return {k: _remove_none_values(v) for k, v in obj.items() if v is not None}
-            elif isinstance(obj, list):
+                return {
+                    k: _remove_none_values(v) for k, v in obj.items() if v is not None
+                }
+            if isinstance(obj, list):
                 return [_remove_none_values(elem) for elem in obj]
             return obj
 
         if not self.is_prompt_batched(prompt) or not self.supports_batched:
             return self._tokenize_single_prompt(prompt)
 
-        res = defaultdict(lambda: [])
+        res = defaultdict(list)
         feature_names = list(prompt.keys())
 
         prompt = _remove_none_values(prompt)
@@ -407,7 +410,7 @@ class ChatTemplateStrategy(PromptTokenizingStrategy):
 
         return dict(res)
 
-    def _tokenize_single_prompt(self, prompt: dict) -> Dict[str, List[int]]:
+    def _tokenize_single_prompt(self, prompt: dict) -> dict[str, list[int]]:
         # Old simple legacy behavior that works reliably.
         if (
             not self.roles_to_train
@@ -882,7 +885,7 @@ class MistralPrompter(ChatTemplatePrompter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._chat_template_msg_variables = set(["tool_call_id", "name", "tool_calls"])
+        self._chat_template_msg_variables = {"tool_call_id", "name", "tool_calls"}
 
 
 class StrategyLoader:
@@ -902,7 +905,7 @@ class StrategyLoader:
 
         return ChatTemplatePrompter
 
-    def _get_strategy_params(self, cfg, ds_cfg: Dict[str, Any]):
+    def _get_strategy_params(self, cfg, ds_cfg: dict[str, Any]):
         return {
             "train_on_inputs": cfg.train_on_inputs,
             "sequence_len": cfg.sequence_len,
@@ -917,7 +920,7 @@ class StrategyLoader:
         self,
         tokenizer,
         cfg,
-        ds_cfg: Union[Dict[str, Any], DatasetConfig] | None = None,
+        ds_cfg: dict[str, Any] | DatasetConfig | None = None,
         processor=None,
     ):
         if ds_cfg is None:

@@ -22,10 +22,7 @@ from huggingface_hub.errors import LocalEntryNotFoundError
 from tokenizers import AddedToken
 from transformers import AutoTokenizer
 
-from tests.hf_offline_utils import (
-    enable_hf_offline,
-    hf_offline_context,
-)
+from tests.hf_offline_utils import enable_hf_offline, hf_offline_context
 
 logging.getLogger("filelock").setLevel(logging.CRITICAL)
 
