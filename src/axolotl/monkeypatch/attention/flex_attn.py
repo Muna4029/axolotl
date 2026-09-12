@@ -81,9 +81,7 @@ def patch_flex_make_mask():
     from torch.nn.attention.flex_attention import (
         _DEFAULT_SPARSE_BLOCK_SIZE as flex_default_block_size,
     )
-    from torch.nn.attention.flex_attention import (
-        BlockMask,
-    )
+    from torch.nn.attention.flex_attention import BlockMask
     from torch.nn.attention.flex_attention import (
         create_block_mask as create_block_causal_mask_flex,
     )

@@ -21,10 +21,7 @@ from transformers.models.mistral.modeling_mistral import (
 from transformers.models.mistral.modeling_mistral import (
     MistralDecoderLayer as OriginalMistralDecoderLayer,
 )
-from transformers.models.mistral.modeling_mistral import (
-    apply_rotary_pos_emb,
-    repeat_kv,
-)
+from transformers.models.mistral.modeling_mistral import apply_rotary_pos_emb, repeat_kv
 
 from axolotl.monkeypatch.utils import get_cu_seqlens_from_pos_ids
 from axolotl.utils.logging import get_logger
