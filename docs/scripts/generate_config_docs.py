@@ -56,6 +56,7 @@ class QuartoGenerator:
                     return ast.unparse(node.annotation)
 
         return "unknown"
+    def _format_field_type(self, field_info: dict) -> str:
         """Format field type information in a readable way."""
         # Handle fallback case where we only have basic info
         if field_info.get("type") == "unknown":
