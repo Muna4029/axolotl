@@ -67,7 +67,7 @@ def parse_requirements(extras_require_map):
             if (major, minor) >= (2, 7):
                 _install_requires.pop(_install_requires.index(xformers_version))
                 if patch == 0:
-                    _install_requires.append("xformers==0.0.30")
+                    _install_requires.append("xformers>=0.0.31")
                 else:
                     _install_requires.append("xformers==0.0.31.post1")
                 extras_require_map["vllm"] = ["vllm>=0.9.0"]
