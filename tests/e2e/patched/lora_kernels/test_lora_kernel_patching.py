@@ -88,7 +88,7 @@ def test_attention_patching_integration(model_name, attention_cls):
     cfg = DictDefault({"base_model": model_name})
 
     # Store the original implementation
-    original_forward = getattr(attention_cls, "forward")
+    original_forward = attention_cls.forward
 
     # Apply patch
     patch_self_attn_lora(cfg)
@@ -104,7 +104,7 @@ def test_attention_patching_integration(model_name, attention_cls):
     assert hasattr(attention_cls, "_original_forward")
 
     # Clean up
-    setattr(attention_cls, "forward", original_forward)
+    attention_cls.forward = original_forward
     delattr(attention_cls, "_original_forward")
 
 
@@ -546,7 +546,7 @@ def test_kernel_training_integration_dropout_non_zero():
     assert attention_cls.forward == original_forward_method
 
     # Load model
-    model, _ = load_model_and_tokenizer(cfg=cfg)
+    model, _, _ = load_model_and_tokenizer(cfg=cfg)
 
     # Apply apply_lora_kernel_patches
     apply_lora_kernel_patches(model, cfg)
