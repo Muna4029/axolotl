@@ -35,7 +35,6 @@ from axolotl.utils import is_comet_available, is_mlflow_available
 from axolotl.utils.callbacks import (
     GCCallback,
     GPUStatsCallback,
-    SaveAxolotlConfigtoWandBCallback,
 )
 from axolotl.utils.callbacks.profiler import PytorchProfilerCallback
 from axolotl.utils.schemas.enums import CustomSupportedOptimizers
@@ -123,6 +122,8 @@ class TrainerBuilderBase(abc.ABC):
             callbacks.append(GCCallback(gc_steps=self.cfg.gc_steps))
 
         if self.cfg.use_wandb:
+            from axolotl.utils.callbacks import SaveAxolotlConfigtoWandBCallback
+
             callbacks.append(
                 SaveAxolotlConfigtoWandBCallback(self.cfg.axolotl_config_path)
             )
