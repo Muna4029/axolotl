@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code  # Duplication is intentional and kept in sync
 """Implements the ReLoRA training procedure from https://arxiv.org/abs/2307.05695, minus the initial full fine-tune."""
 
 import glob
