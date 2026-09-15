@@ -221,6 +221,11 @@ class AxolotlTrainingMixins:
         },
     )
 
+    dataset_num_proc: int = field(
+        default=1,
+        metadata={"help": "Number of processes to use for dataset processing"},
+    )
+
     # multi-modal section
 
     image_size: int | tuple[int, int] | None = field(
