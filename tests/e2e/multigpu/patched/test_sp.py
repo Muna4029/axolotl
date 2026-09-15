@@ -1,5 +1,7 @@
 """E2E tests for sequence parallelism"""
 
+# pylint: disable=duplicate-code
+
 from pathlib import Path
 
 import pytest
