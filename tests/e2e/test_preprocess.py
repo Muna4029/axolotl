@@ -1,5 +1,7 @@
 """E2E Test the preprocess cli"""
 
+# pylint: disable=duplicate-code
+
 from pathlib import Path
 
 import yaml
