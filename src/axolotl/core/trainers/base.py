@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import os
 from collections import defaultdict
+from collections.abc import Callable
 from functools import partial, wraps
-from typing import Callable, Literal, Optional
+from typing import Literal
 
 import datasets
 import torch
@@ -74,7 +75,6 @@ class AxolotlTrainer(
         self._stored_metrics = defaultdict(lambda: defaultdict(list))
         if self.args.orpo_alpha:
             self.loss_fct = torch.nn.CrossEntropyLoss(reduction="none")
-
 
     def _create_multipack_sampler(
         self, base_sampler: Sampler, dataset: Dataset
@@ -191,9 +191,9 @@ class AxolotlTrainer(
         dataset: Dataset,
         description: str,
         batch_size: int,
-        sampler_fn: Optional[Callable[[Dataset], torch.utils.data.Sampler]] = None,
+        sampler_fn: Callable[[Dataset], torch.utils.data.Sampler] | None = None,
         is_training: bool = False,
-        dataloader_key: Optional[str] = None,
+        dataloader_key: str | None = None,
     ) -> DataLoader:
         """Create a [`~torch.utils.data.DataLoader`] from the given dataset."""
 
@@ -444,11 +444,9 @@ class AxolotlTrainer(
 
         # Perform a single forward pass
         outputs = model(
-            **{
-                "input_ids": concat_inputs["input_ids"],
-                "attention_mask": concat_inputs["attention_mask"],
-                "labels": concat_inputs["labels"],
-            },
+            input_ids=concat_inputs["input_ids"],
+            attention_mask=concat_inputs["attention_mask"],
+            labels=concat_inputs["labels"],
             output_hidden_states=True,
         )
 
@@ -513,10 +511,7 @@ class AxolotlTrainer(
         res = super().create_accelerator_and_postprocess()
 
         if self.is_fsdp_enabled:
-            if (
-                "limit_all_gathers" in self.args.fsdp_config
-                and self.args.fsdp_config["limit_all_gathers"]
-            ):
+            if self.args.fsdp_config.get("limit_all_gathers"):
                 self.accelerator.state.fsdp_plugin.limit_all_gathers = True
 
         return res
