@@ -16,10 +16,10 @@ _JINJA_TEMPALTE_CHOICE = "jinja"
 _DEFAULT_TEMPLATE_CHOICE = "tokenizer_default"
 _DEFAULT_FALLBACK_CHATML_TEMPLATE_CHOICE_PREFIX = "tokenizer_default_fallback_"
 
-_CHAT_TEMPLATES: dict[str, str] = {}
+CHAT_TEMPLATES: dict[str, str] = {}
 for filename in [f for f in os.listdir("./templates") if f.endswith(".jinja")]:
     with open(f"./templates/{filename}", "r", encoding="utf-8") as f:
-        _CHAT_TEMPLATES[filename[:-6]] = f.read()
+        CHAT_TEMPLATES[filename[:-6]] = f.read()
 
 
 def get_chat_template(
@@ -75,8 +75,8 @@ def get_chat_template(
             f"No chat template found on tokenizer, falling back to {user_choice}. It is recommended to set --train_on_inputs to True for the model to learn this chat template."
         )
 
-    if user_choice in _CHAT_TEMPLATES:
-        return _CHAT_TEMPLATES[user_choice]
+    if user_choice in CHAT_TEMPLATES:
+        return CHAT_TEMPLATES[user_choice]
 
     raise ValueError(f"Template '{user_choice}' not found.")
 
@@ -115,7 +115,7 @@ def register_chat_template(template_name: str, chat_template: str):
         chat_template (str): The template string.
     """
 
-    if template_name in _CHAT_TEMPLATES:
+    if template_name in CHAT_TEMPLATES:
         raise ValueError(f"Template '{template_name}' already exists.")
 
-    _CHAT_TEMPLATES[template_name] = chat_template
+    CHAT_TEMPLATES[template_name] = chat_template
