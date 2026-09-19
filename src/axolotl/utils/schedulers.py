@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code  # Duplication is intentional and kept in sync
 """Module for custom LRScheduler class"""
 
 import math
