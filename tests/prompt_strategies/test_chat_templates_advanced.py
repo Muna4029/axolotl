@@ -20,6 +20,7 @@ from axolotl.utils.chat_templates import get_chat_template
 from axolotl.utils.logging import get_logger
 
 from tests.hf_offline_utils import enable_hf_offline
+from tests.prompt_strategies.test_utils import TOOL_MULTIPLES
 
 LOG = get_logger(__name__)
 
@@ -1314,27 +1315,7 @@ class TestChatTemplateToolCalling:
                             },
                         },
                     },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "multiples",
-                            "description": "Generates a list of all the multiples of a number that are less than a given limit.",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "number": {
-                                        "type": "integer",
-                                        "description": "The number to find multiples of.",
-                                    },
-                                    "limit": {
-                                        "type": "integer",
-                                        "description": "The upper limit for the multiples.",
-                                    },
-                                },
-                                "required": ["number", "limit"],
-                            },
-                        },
-                    },
+                    TOOL_MULTIPLES,
                 ],
                 "messages": [
                     {

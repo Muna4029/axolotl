@@ -3,6 +3,8 @@
 import unittest
 from typing import TYPE_CHECKING
 
+from tests.prompt_strategies.test_utils import TOOL_MULTIPLES
+
 if TYPE_CHECKING:
     from axolotl.utils.mistral_tokenizer import HFMistralTokenizer
 
@@ -159,27 +161,7 @@ def test_magistral_chat_template(magistral_tokenizer: "HFMistralTokenizer"):
     res = strategy.tokenize_prompt(
         {
             "tools": [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "multiples",
-                        "description": "Generates a list of all the multiples of a number that are less than a given limit.",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "number": {
-                                    "type": "integer",
-                                    "description": "The number to find multiples of.",
-                                },
-                                "limit": {
-                                    "type": "integer",
-                                    "description": "The upper limit for the multiples.",
-                                },
-                            },
-                            "required": ["number", "limit"],
-                        },
-                    },
-                },
+                TOOL_MULTIPLES,
             ],
             "messages": [
                 {
