@@ -101,7 +101,7 @@ def matmul_lora(
     if W_quant is not None:
         del W
 
-    if A is not None:
+    if A is not None and B is not None:
         A, B = A.t(), B.t()
         out += (X @ A.to(dtype)) @ (s * B.to(dtype))
 
