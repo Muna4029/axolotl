@@ -58,12 +58,26 @@ def parse_requirements():
             else:
                 raise ValueError("Invalid version format")
 
-            if (major, minor) >= (2, 5):
+            if (major, minor) >= (2, 8):
+                _install_requires.pop(_install_requires.index(xformers_version))
+                _install_requires.append("xformers>=0.0.32")
+            elif (major, minor) >= (2, 7):
+                _install_requires.pop(_install_requires.index(xformers_version))
+                if patch == 0:
+                    _install_requires.append("xformers==0.0.30")
+                else:
+                    _install_requires.append("xformers==0.0.31.post1")
+            elif (major, minor) >= (2, 6):
+                _install_requires.pop(_install_requires.index(xformers_version))
+                _install_requires.append("xformers==0.0.29.post3")
+                # since we only support 2.6.0+cu126
+                _dependency_links.append("https://download.pytorch.org/whl/cu126")
+            elif (major, minor) >= (2, 5):
                 _install_requires.pop(_install_requires.index(xformers_version))
                 if patch == 0:
                     _install_requires.append("xformers==0.0.28.post2")
                 else:
-                    _install_requires.append("xformers==0.0.28.post3")
+                    _install_requires.append("xformers>=0.0.28.post3")
                 _install_requires.pop(_install_requires.index(autoawq_version))
             elif (major, minor) >= (2, 4):
                 if patch == 0:
@@ -72,22 +86,8 @@ def parse_requirements():
                 else:
                     _install_requires.pop(_install_requires.index(xformers_version))
                     _install_requires.append("xformers==0.0.28.post1")
-            elif (major, minor) >= (2, 3):
-                _install_requires.pop(_install_requires.index(torchao_version))
-                if patch == 0:
-                    _install_requires.pop(_install_requires.index(xformers_version))
-                    _install_requires.append("xformers>=0.0.26.post1")
-                else:
-                    _install_requires.pop(_install_requires.index(xformers_version))
-                    _install_requires.append("xformers>=0.0.27")
-            elif (major, minor) >= (2, 2):
-                _install_requires.pop(_install_requires.index(torchao_version))
-                _install_requires.pop(_install_requires.index(xformers_version))
-                _install_requires.append("xformers>=0.0.25.post1")
             else:
-                _install_requires.pop(_install_requires.index(torchao_version))
-                _install_requires.pop(_install_requires.index(xformers_version))
-                _install_requires.append("xformers>=0.0.23.post1")
+                raise ValueError("axolotl requires torch>=2.4")
 
     except PackageNotFoundError:
         pass
