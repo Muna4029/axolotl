@@ -56,12 +56,15 @@ def get_chat_template(
     tokenizer: Optional["PreTrainedTokenizerBase"] = None,
 ) -> str:
     """
-    Finds the correct chat_template based on the user's choice, jinja_template, and tokenizer.
+    Finds the correct chat_template based on the user's choice, jinja_template, and
+    tokenizer.
 
     Args:
         user_choice (str): The user's choice of template.
-        jinja_template (Optional[str], optional): The jinja template string. Defaults to None.
-        tokenizer (Optional[PreTrainedTokenizerBase], optional): The tokenizer. Defaults to None.
+        jinja_template (Optional[str], optional): The jinja template string.
+        Defaults to None.
+        tokenizer (Optional[PreTrainedTokenizerBase], optional): The tokenizer.
+        Defaults to None.
 
     Returns:
         str: The chosen template string.
