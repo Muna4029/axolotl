@@ -236,7 +236,8 @@ class ModelLoader:
         ):
             LOG.warning(
                 "increasing model.config.max_position_embeddings from "
-                f"{self.model.config.max_position_embeddings} to {self.cfg.sequence_len}"
+                f"{self.model.config.max_position_embeddings} to "
+                f"{self.cfg.sequence_len}"
             )
             self.model.config.max_position_embeddings = self.cfg.sequence_len
 
@@ -544,7 +545,8 @@ class ModelLoader:
         """Sample packing uses custom FA2 patch"""
         if self.cfg.flex_attention:
             self.model_kwargs["attn_implementation"] = "flex_attention"
-            self.model_config._attn_implementation = (  # pylint: disable=protected-access
+            self.model_config._attn_implementation = (
+                # pylint: disable=protected-access
                 "flex_attention"
             )
 
@@ -552,17 +554,20 @@ class ModelLoader:
             if not self.cfg.sample_packing and self.cfg.s2_attention:
                 pass
             self.model_kwargs["attn_implementation"] = "flash_attention_2"
-            self.model_config._attn_implementation = (  # pylint: disable=protected-access
+            self.model_config._attn_implementation = (
+                # pylint: disable=protected-access
                 "flash_attention_2"
             )
         elif self.cfg.sdp_attention:
             self.model_kwargs["attn_implementation"] = "sdpa"
-            self.model_config._attn_implementation = (  # pylint: disable=protected-access
+            self.model_config._attn_implementation = (
+                # pylint: disable=protected-access
                 "sdpa"
             )
         elif self.cfg.eager_attention:
             self.model_kwargs["attn_implementation"] = "eager"
-            self.model_config._attn_implementation = (  # pylint: disable=protected-access
+            self.model_config._attn_implementation = (
+                # pylint: disable=protected-access
                 "eager"
             )
 
@@ -615,7 +620,10 @@ class ModelLoader:
             if self.cfg.fsdp_config.cpu_ram_efficient_loading:
                 skip_move_to_device = True
                 # Don't delete device_map for QLoRA + FSDP - it was set correctly in _set_device_map
-                if "device_map" in self.model_kwargs and not self.is_qlora_and_fsdp_enabled:
+                if (
+    "device_map" in self.model_kwargs
+    and not self.is_qlora_and_fsdp_enabled
+):
                     del self.model_kwargs["device_map"]
             elif self.is_qlora_and_fsdp_enabled:
                 skip_move_to_device = True
