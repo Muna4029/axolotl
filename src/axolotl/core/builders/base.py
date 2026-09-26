@@ -31,7 +31,7 @@ from transformers.training_args import OptimizerNames
 
 from axolotl.integrations.base import PluginManager
 from axolotl.monkeypatch.trainer.lr import patch_trainer_get_lr
-from axolotl.utils import is_comet_available, is_mlflow_available
+from axolotl.utils import is_comet_available, is_mlflow_available, is_wandb_available
 from axolotl.utils.callbacks import (
     GCCallback,
     GPUStatsCallback,
@@ -122,7 +122,7 @@ class TrainerBuilderBase(abc.ABC):
         if self.cfg.gc_steps:
             callbacks.append(GCCallback(gc_steps=self.cfg.gc_steps))
 
-        if self.cfg.use_wandb:
+        if self.cfg.use_wandb and is_wandb_available():
             callbacks.append(
                 SaveAxolotlConfigtoWandBCallback(self.cfg.axolotl_config_path)
             )
@@ -395,7 +395,7 @@ class TrainerBuilderBase(abc.ABC):
 
     def _configure_reporting(self, training_args_kwargs: dict):
         report_to = []
-        if self.cfg.use_wandb:
+        if self.cfg.use_wandb and is_wandb_available():
             report_to.append("wandb")
         if self.cfg.use_mlflow:
             report_to.append("mlflow")
@@ -406,7 +406,7 @@ class TrainerBuilderBase(abc.ABC):
 
         training_args_kwargs["report_to"] = report_to
 
-        if self.cfg.use_wandb:
+        if self.cfg.use_wandb and is_wandb_available():
             training_args_kwargs["run_name"] = self.cfg.wandb_name
         elif self.cfg.use_mlflow:
             training_args_kwargs["run_name"] = self.cfg.mlflow_run_name

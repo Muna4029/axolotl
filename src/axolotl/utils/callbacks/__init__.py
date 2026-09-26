@@ -15,7 +15,11 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.distributed as dist
-import wandb
+try:
+    import wandb
+except Exception:  # Catch Exception to handle broken wandb installations (e.g., missing protobuf classes)
+    # when wandb is installed but has missing internal dependencies
+    wandb = None
 from datasets import load_dataset
 from optimum.bettertransformer import BetterTransformer
 from tqdm import tqdm

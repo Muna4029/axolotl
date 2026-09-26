@@ -25,7 +25,7 @@ from axolotl.integrations.base import PluginManager
 from axolotl.monkeypatch.multipack import SUPPORTED_MULTIPACK_MODEL_TYPES
 from axolotl.monkeypatch.relora import ReLoRACallback
 from axolotl.processing_strategies import get_processing_strategy
-from axolotl.utils import is_comet_available, is_mlflow_available
+from axolotl.utils import is_comet_available, is_mlflow_available, is_wandb_available
 from axolotl.utils.callbacks import (
     LossWatchDogCallback,
     SaveBetterTransformerModelCallback,
@@ -78,7 +78,7 @@ class HFCausalTrainerBuilder(TrainerBuilderBase):
 
     def get_post_trainer_create_callbacks(self, trainer):
         callbacks = []
-        if self.cfg.use_wandb and self.cfg.eval_table_size > 0:
+        if self.cfg.use_wandb and is_wandb_available() and self.cfg.eval_table_size > 0:
             LogPredictionCallback = log_prediction_callback_factory(
                 trainer, self.tokenizer, "wandb"
             )
@@ -348,7 +348,7 @@ class HFCausalTrainerBuilder(TrainerBuilderBase):
         training_args = self.hook_post_create_training_args(training_args)
 
         # unset run_name so wandb sets up experiment names
-        if self.cfg.use_wandb and training_args.run_name == training_args.output_dir:
+        if self.cfg.use_wandb and is_wandb_available() and training_args.run_name == training_args.output_dir:
             training_args.run_name = (  # pylint: disable=attribute-defined-outside-init
                 None
             )

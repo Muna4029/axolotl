@@ -15,6 +15,7 @@ from axolotl.core.trainers.grpo import GRPOStrategy
 from axolotl.integrations.base import PluginManager
 from axolotl.loaders.utils import ensure_dtype
 from axolotl.utils.callbacks.qat import QATCallback
+from axolotl.utils import is_wandb_available
 from axolotl.utils.logging import get_logger
 from axolotl.utils.schemas.enums import RLType
 
@@ -106,7 +107,7 @@ class HFRLTrainerBuilder(TrainerBuilderBase):
         if self.cfg.rpo_alpha is not None:
             training_args_kwargs["rpo_alpha"] = self.cfg.rpo_alpha
 
-        if self.cfg.use_wandb:
+        if self.cfg.use_wandb and is_wandb_available():
             training_args_kwargs["run_name"] = self.cfg.wandb_name
 
         training_args_cls = None
@@ -163,7 +164,7 @@ class HFRLTrainerBuilder(TrainerBuilderBase):
         )
 
         # unset run_name so wandb sets up experiment names
-        if self.cfg.use_wandb and training_args.run_name == training_args.output_dir:
+        if self.cfg.use_wandb and is_wandb_available() and training_args.run_name == training_args.output_dir:
             training_args.run_name = (  # pylint: disable=attribute-defined-outside-init
                 None
             )

@@ -16,6 +16,17 @@ def is_mlflow_available():
 def is_comet_available():
     return importlib.util.find_spec("comet_ml") is not None
 
+def is_wandb_available():
+    # Check if wandb module spec exists first (fast path)
+    if importlib.util.find_spec("wandb") is None:
+        return False
+    # Then verify it can actually be imported (handles broken installations)
+    try:
+        import wandb  # pylint: disable=ungrouped-imports
+        return True
+    except Exception:
+        return False
+
 
 # pylint: disable=duplicate-code
 def get_pytorch_version() -> tuple[int, int, int]:
