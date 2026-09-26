@@ -67,7 +67,7 @@ def parse_requirements(extras_require_map):
             if (major, minor) >= (2, 7):
                 _install_requires.pop(_install_requires.index(xformers_version))
                 if patch == 0:
-                    _install_requires.append("xformers==0.0.30")
+                    _install_requires.append("xformers==0.0.31")
                     # vllm 0.9.x is incompatible with latest transformers
                     extras_require_map.pop("vllm")
                 else:
