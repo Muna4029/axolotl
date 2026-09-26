@@ -12,7 +12,7 @@ from typing import Any
 import peft
 import torch
 import transformers
-import transformers.modeling_utils
+
 from accelerate import init_empty_weights, PartialState
 from accelerate.utils.dataclasses import ParallelismConfig
 from peft import (
@@ -28,6 +28,7 @@ from transformers import (
     AwqConfig,
     BitsAndBytesConfig,
     GPTQConfig,
+    modeling_utils,
     PreTrainedModel,
     PreTrainedTokenizerBase,
 )
@@ -632,7 +633,7 @@ class ModelLoader:
             if "device_map" in self.model_kwargs:
                 del self.model_kwargs["device_map"]
 
-            transformers.modeling_utils.is_deepspeed_zero3_enabled = lambda: True
+            modeling_utils.is_deepspeed_zero3_enabled = lambda: True
             transformers.integrations.deepspeed.is_deepspeed_zero3_enabled = (
                 lambda: True
             )
