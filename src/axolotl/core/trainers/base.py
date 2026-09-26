@@ -128,7 +128,9 @@ class AxolotlTrainer(
             If the dataset is non-empty, a sampler is returned, the type of which
                 depends on the passed training args.
         """
-        # from https://github.com/huggingface/transformers/blob/2166b6b4ff09f6dd3867ab982f262f66482aa968/src/transformers/trainer.py#L969C1-L972C24
+        # from https://github.com/huggingface/transformers/blob/
+        # 2166b6b4ff09f6dd3867ab982f262f66482aa968/src/transformers/
+        # trainer.py#L969C1-L972C24
         if train_dataset is None:
             train_dataset = self.train_dataset
         if train_dataset is None or not has_length(train_dataset):
@@ -162,11 +164,14 @@ class AxolotlTrainer(
             If the dataset is non-empty, a sampler is returned, the type of which
                 depends on the passed training args.
         """
-        # from https://github.com/huggingface/transformers/blob/2166b6b4ff09f6dd3867ab982f262f66482aa968/src/transformers/trainer.py#L1065C9-L1066C24
+        # from https://github.com/huggingface/transformers/blob/
+        # 2166b6b4ff09f6dd3867ab982f262f66482aa968/src/transformers/
+        # trainer.py#L1065C9-L1066C24
         if eval_dataset is None or not has_length(eval_dataset):
             return None
 
-        # Multipacking enabled if training is enabled and eval is not explicitly disabled
+        # Multipacking enabled if training is enabled and eval is not explicitly
+        # disabled
         use_multipack = (
             self.args.sample_packing and self.args.eval_sample_packing is not False
         )
@@ -275,9 +280,11 @@ class AxolotlTrainer(
         # fmt: off
         if dataloader_key is not None and self.args.dataloader_persistent_workers:
             if hasattr(self, "_eval_dataloaders"):
-                self._eval_dataloaders[dataloader_key] = dataloader  # type: ignore  # pylint: disable=access-member-before-definition
+                self._eval_dataloaders[dataloader_key] = dataloader  # type: ignore
+                # pylint: disable=access-member-before-definition
             else:
-                self._eval_dataloaders = {dataloader_key: dataloader}  # pylint: disable=attribute-defined-outside-init
+                self._eval_dataloaders = {dataloader_key: dataloader}
+                # pylint: disable=attribute-defined-outside-init
         # fmt: on
 
         return self.accelerator.prepare(dataloader)
@@ -307,7 +314,8 @@ class AxolotlTrainer(
             dataloader_params["drop_last"] = self.args.dataloader_drop_last
 
         return DataLoader(bench_dataset, **dataloader_params)
-        # return self.accelerator.prepare(DataLoader(bench_dataset, **dataloader_params))
+        # return self.accelerator.prepare(DataLoader(bench_dataset,
+        #     **dataloader_params))
 
     @override
     def compute_loss(
@@ -498,8 +506,10 @@ class AxolotlTrainer(
     @wraps(Trainer.push_to_hub)
     def push_to_hub(self, *args, **kwargs) -> str:
         """
-        Overwrite the `push_to_hub` method in order to force-add the tags when pushing the
-        model on the Hub. Please refer to `~transformers.Trainer.push_to_hub` for more details.
+        Overwrite the `push_to_hub` method in order to force-add the tags when
+        pushing the model on the Hub. Please refer to
+        `~transformers.Trainer.push_to_hub`
+        for more details.
         """
         kwargs = sanitize_kwargs_for_ds_tagging(
             dataset_tags=self.dataset_tags, kwargs=kwargs

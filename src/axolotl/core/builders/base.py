@@ -149,7 +149,8 @@ class TrainerBuilderBase(abc.ABC):
 
     def get_post_trainer_create_callbacks(self, trainer):
         """
-        Callbacks added after the trainer is created, usually b/c these need access to the trainer
+        Callbacks added after the trainer is created, usually b/c these need
+        access to the trainer
         """
         callbacks = []
         if self.cfg.plugins:
@@ -258,7 +259,8 @@ class TrainerBuilderBase(abc.ABC):
                 adam_kwargs["eps"] = training_args_kwargs.get("adam_epsilon")
 
             if self.cfg.optimizer == "muon":
-                from axolotl.contribs.mit.muon import (  # pylint: disable=no-name-in-module
+                from axolotl.contribs.mit.muon import (
+                    # pylint: disable=no-name-in-module
                     MuonOptimizerFactory,
                 )
 
@@ -278,7 +280,8 @@ class TrainerBuilderBase(abc.ABC):
                 optimizer_kwargs.update(adam_kwargs)
 
                 LOG.warning(
-                    f"`ao_adamw_4bit` will be deprecated soon. Please use `{OptimizerNames.ADAMW_TORCH_4BIT}` instead."
+                    f"`ao_adamw_4bit` will be deprecated soon. Please use "
+                    f"`{OptimizerNames.ADAMW_TORCH_4BIT}` instead."
                 )
             elif self.cfg.optimizer == "ao_adamw_8bit":
                 from torchao.prototype.low_bit_optim import AdamW8bit
@@ -418,7 +421,8 @@ class TrainerBuilderBase(abc.ABC):
             torch._dynamo.config.suppress_errors = (  # pylint: disable=protected-access
                 True
             )
-            torch._dynamo.config.accumulated_cache_size_limit = (  # pylint: disable=protected-access
+            torch._dynamo.config.accumulated_cache_size_limit = (
+                # pylint: disable=protected-access
                 256
             )
             training_args_kwargs["torch_compile"] = self.cfg.torch_compile
