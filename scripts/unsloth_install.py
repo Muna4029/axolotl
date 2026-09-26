@@ -32,8 +32,14 @@ elif v < V("2.5.0"):
     x = "cu{}{}-torch240"
 elif v < V("2.6.0"):
     x = "cu{}{}-torch250"
+elif v < V("2.7.0"):
+    x = "cu{}{}-torch260"
+elif v < V("2.8.0"):
+    x = "cu{}{}-torch270"
+elif v < V("2.9.0"):
+    x = "cu{}{}-torch280"
 else:
-    raise RuntimeError(f"Torch = {v} too new!")
+    x = "cu{}{}-torch290"
 x = x.format(cuda.replace(".", ""), "-ampere" if is_ampere else "")
 uv_prefix = "uv " if use_uv else ""
 print(
