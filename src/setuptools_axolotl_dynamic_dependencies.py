@@ -46,7 +46,7 @@ def parse_requirements():
                 torch_version = version("torch")
             except PackageNotFoundError:
                 torch_version = "2.5.1"
-            _install_requires.append(f"torch=={torch_version}")
+            _install_requires.append(f"torch>={torch_version}")
 
             version_match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?", torch_version)
             if version_match:
