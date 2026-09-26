@@ -8,6 +8,7 @@ from .base import (
     get_chat_template,
     get_chat_template_from_config,
     register_chat_template,
+    _CHAT_TEMPLATES,
 )
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "extract_chat_template_args",
     "get_chat_template_from_config",
     "register_chat_template",
+    "_CHAT_TEMPLATES",
 ]
