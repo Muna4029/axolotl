@@ -64,6 +64,7 @@ jobs:
         python scripts/unsloth_install.py | sh
         python scripts/cutcrossentropy_install.py | sh
         pip3 install -r requirements-dev.txt -r requirements-tests.txt
+        pip3 install "protobuf>=7.36.1"
 
     - name: Make sure PyTorch version wasn't clobbered
       run: |
