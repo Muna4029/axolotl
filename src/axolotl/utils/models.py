@@ -55,7 +55,7 @@ from transformers.integrations.deepspeed import (
 from axolotl.common.architectures import MOE_ARCH_BLOCK
 from axolotl.integrations.base import PluginManager
 from axolotl.models.mamba import fix_mamba_attn_for_loss
-from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+# from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
 from axolotl.monkeypatch.multipack import (
     SUPPORTED_MULTIPACK_MODEL_TYPES,
     patch_for_multipack,
@@ -797,12 +797,12 @@ class ModelLoader:
             LOG.info("patching with xformers attention")
             hijack_llama_attention()
         elif self.cfg.sample_packing:
-            from axolotl.monkeypatch.llama_patch_multipack import (
-                hijack_llama_prepare_4d_mask,
-            )
+            # from axolotl.monkeypatch.llama_patch_multipack import (
+            #     hijack_llama_prepare_4d_mask,
+            # )
 
-            LOG.info("patching llama _prepare_4d_causal_attention_mask*")
-            hijack_llama_prepare_4d_mask()
+            # LOG.info("patching llama _prepare_4d_causal_attention_mask*")
+            # hijack_llama_prepare_4d_mask()
         elif self.cfg.s2_attention:
             raise NotImplementedError(
                 "Shifted-sparse attention not currently implemented without flash attention."
@@ -1268,9 +1268,9 @@ class ModelLoader:
 
             integrate_lora_patch(self.model, self.cfg)
         if self.cfg.unsloth_rope:
-            from axolotl.monkeypatch.unsloth_ import integrate_rope_embeddings
+            # from axolotl.monkeypatch.unsloth_ import integrate_rope_embeddings
 
-            integrate_rope_embeddings()
+            # integrate_rope_embeddings()
 
     def apply_lora_patch(self) -> None:
         if (
@@ -1500,11 +1500,11 @@ def load_llama_adapter(model, cfg):
 
     if cfg.lora_model_dir:
         LOG.debug("Loading pretrained PEFT - llama_adapter")
-        model = PeftModel.from_pretrained(
-            model,
-            cfg.lora_model_dir,
-            torch_dtype=torch.float16,
-        )
+        # model = PeftModel.from_pretrained(
+        #     model,
+        #     cfg.lora_model_dir,
+        #     torch_dtype=torch.float16,
+        # )
     else:
         model = get_peft_model(model, peft_config)
 
@@ -1622,12 +1622,12 @@ def load_lora(model, cfg, inference=False, config_only=False):
         if cfg.lora_on_cpu:
             model_kwargs["max_memory"] = {"cpu": "256GiB"}
             model_kwargs["device_map"] = {"": "cpu"}
-        model = PeftModel.from_pretrained(
-            model,
-            cfg.lora_model_dir,
-            is_trainable=(not inference),
-            **model_kwargs,
-        )
+        # model = PeftModel.from_pretrained(
+        #     model,
+        #     cfg.lora_model_dir,
+        #     is_trainable=(not inference),
+        #     **model_kwargs,
+        # )
     else:
         model = get_peft_model(model, lora_config)
 
