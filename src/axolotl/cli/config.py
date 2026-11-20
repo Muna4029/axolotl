@@ -77,7 +77,6 @@ def check_remote_config(config: Union[str, Path]) -> Union[str, Path]:
             except yaml.YAMLError as err:
                 raise ValueError(
                     f"Failed to parse the content at {config} as YAML: {err}",
-                    use_environ=True,
                 ) from err
 
         # Write the content to a file if it's valid YAML (or JSON treated as YAML)
