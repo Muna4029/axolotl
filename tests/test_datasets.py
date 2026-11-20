@@ -8,13 +8,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from datasets import Dataset
-from huggingface_hub import snapshot_download
-from transformers import PreTrainedTokenizer
-
 from axolotl.utils.data import load_tokenized_prepared_datasets
 from axolotl.utils.data.rl import load_prepare_preference_datasets
 from axolotl.utils.dict import DictDefault
+from datasets import Dataset
+from huggingface_hub import snapshot_download
+from transformers import PreTrainedTokenizer
 
 from tests.constants import (
     ALPACA_MESSAGES_CONFIG_OG,
@@ -44,7 +43,9 @@ class TestDatasetPreparation:
             ]
         )
 
-    @pytest.mark.skip(reason="TODO: fix hf hub offline to work with HF rate limits")
+    @pytest.mark.skip(
+        reason="Skipping due to known issue with offline mode and Hugging Face rate limits"
+    )
     @enable_hf_offline
     def test_load_hub(self, tokenizer):
         """Core use case.  Verify that processing data from the hub works"""
@@ -70,8 +71,8 @@ class TestDatasetPreparation:
             assert "attention_mask" in dataset.features
             assert "labels" in dataset.features
 
+    @pytest.mark.skip(reason="Skipping due to bug with local datasets when offline")
     @enable_hf_offline
-    @pytest.mark.skip("datasets bug with local datasets when offline")
     def test_load_local_hub(self, tokenizer):
         """Niche use case.  Verify that a local copy of a hub dataset can be loaded"""
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -178,7 +179,6 @@ class TestDatasetPreparation:
             assert "attention_mask" in dataset.features
             assert "labels" in dataset.features
 
-    @enable_hf_offline
     def test_load_from_dir_of_json(self, tokenizer, dataset_fixture):
         """Standard use case.  Verify a directory of json files can be loaded."""
         with tempfile.TemporaryDirectory() as tmp_dir:
