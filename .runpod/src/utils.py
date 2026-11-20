@@ -19,8 +19,12 @@ def make_valid_config(input_args):
     :return: str, path to the updated config file
     """
     # Load default config
-    with open("config/config.yaml", "r", encoding="utf-8") as fin:
-        all_args = yaml.safe_load(fin)
+    try:
+        with open("config/config.yaml", "r", encoding="utf-8") as fin:
+            all_args = yaml.safe_load(fin)
+    except FileNotFoundError:
+        print("Configuration file 'config/config.yaml' not found.")
+        return None
 
     if not input_args:
         print("No args provided, using defaults")
@@ -31,8 +35,9 @@ def make_valid_config(input_args):
     updated_config_path = "config/updated_config.yaml"
 
     # Save updated config to new file
-    with open(updated_config_path, "w", encoding="utf-8") as f:
-        yaml.dump(all_args, f)
+    if all_args is not None:
+        with open(updated_config_path, "w", encoding="utf-8") as f:
+            yaml.dump(all_args, f)
 
     return updated_config_path
 
