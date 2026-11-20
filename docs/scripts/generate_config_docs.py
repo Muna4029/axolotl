@@ -58,15 +58,16 @@ class QuartoGenerator:
         return "unknown"
         """Format field type information in a readable way."""
         # Handle fallback case where we only have basic info
-        if field_info.get("type") == "unknown":
+        if field_info is not None and field_info.get("type") == "unknown":
             return "unknown"
 
-        if "anyOf" in field_info:
+        if field_info is not None and "anyOf" in field_info:
             types = []
             is_optional = False
 
-            for option in field_info["anyOf"]:
-                if option.get("type") == "null":
+            if field_info is not None:
+                for option in field_info["anyOf"]:
+                    if option.get("type") == "null":
                     is_optional = True
                 elif option.get("type"):
                     types.append(option["type"])
@@ -77,10 +78,10 @@ class QuartoGenerator:
             type_str = " | ".join(types) if types else "unknown"
             return f"{type_str} | None" if is_optional else type_str
 
-        field_type = field_info.get("type", "unknown")
+        field_type = field_info.get("type", "unknown") if field_info is not None else "unknown"
 
         if field_type == "array":
-            items = field_info.get("items", {})
+            items = field_info.get("items", {}) if field_info is not None else {}
             if items.get("type"):
                 item_type = items["type"]
             elif "$ref" in items:
@@ -304,9 +305,10 @@ class QuartoGenerator:
                     hasattr(field_info, "json_schema_extra")
                     and field_info.json_schema_extra
                 ):
-                    description = field_info.json_schema_extra.get("description", "")
-                elif hasattr(field_info, "description") and field_info.description:
-                    description = field_info.description
+                    if field_info is not None:
+                        description = field_info.json_schema_extra.get("description", "")
+                    elif hasattr(field_info, "description") and field_info.description:
+                        description = field_info.description
 
                 # Get default value
                 default_val = None
@@ -352,7 +354,7 @@ class QuartoGenerator:
                 if field_name not in properties:
                     continue
 
-                field_info = properties[field_name]
+                field_info = properties.get(field_name, None)
                 field_type = self._extract_type_from_source(model_class, field_name)
                 is_required = field_name in required
 
@@ -388,6 +390,7 @@ def main():
     with open("docs/config-reference.qmd", "w", encoding="utf-8") as f:
         f.write(qmd_content)
     print("Done!")
+    return
 
 
 if __name__ == "__main__":
