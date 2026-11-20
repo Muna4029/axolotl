@@ -1,7 +1,6 @@
 """Test for batch size calculation for multi-gpu training."""
 
 import pytest
-
 from axolotl.utils.config import normalize_config, validate_config
 from axolotl.utils.dict import DictDefault
 
@@ -37,3 +36,8 @@ class TestTrain:
         cfg = validate_config(train_base_cfg)
         normalize_config(cfg)
         assert cfg.batch_size == expected_batch_size
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        logger.info(
+            f"Expected batch size: {expected_batch_size}, Actual batch size: {cfg.batch_size}"
+        )

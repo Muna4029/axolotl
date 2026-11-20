@@ -294,6 +294,7 @@ def validate_config(
                     **cfg.to_dict(),
                     capabilities=capabilities,
                     env_capabilities=env_capabilities,
+                    main_process_only=False,
                 ).model_dump(exclude_none=True)
             )
         )
