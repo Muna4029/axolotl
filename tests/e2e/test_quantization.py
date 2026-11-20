@@ -4,6 +4,15 @@ Tests for axolotl.utils.quantization
 
 import pytest
 import torch
+from axolotl.utils.callbacks.qat import QATCallback
+from axolotl.utils.quantization import (
+    convert_qat_model_for_ptq,
+    get_ptq_config,
+    prepare_model_for_qat,
+    quantize_model_for_ptq,
+)
+from axolotl.utils.schemas.enums import TorchIntDType
+from axolotl.utils.schemas.quantization import QATConfig
 from torch import nn
 from torchao.dtypes.affine_quantized_tensor import AffineQuantizedTensor
 from torchao.quantization.granularity import PerAxis, PerGroup
@@ -17,20 +26,11 @@ from torchao.quantization.quant_api import (
     Int4WeightOnlyConfig,
     Int8DynamicActivationInt8WeightConfig,
     Int8WeightOnlyConfig,
+    TorchIntDType,
     UIntXWeightOnlyConfig,
 )
 from transformers import AutoModelForCausalLM
 from transformers.trainer_callback import TrainerState
-
-from axolotl.utils.callbacks.qat import QATCallback
-from axolotl.utils.quantization import (
-    convert_qat_model_for_ptq,
-    get_ptq_config,
-    prepare_model_for_qat,
-    quantize_model_for_ptq,
-)
-from axolotl.utils.schemas.enums import TorchIntDType
-from axolotl.utils.schemas.quantization import QATConfig
 
 from tests.e2e.utils import require_torch_2_6_0
 
@@ -54,11 +54,11 @@ def model():
 ptq_config_test_cases = [
     # weight_dtype, activation_dtype, group_size, expected_type, expected_params
     (
-        TorchIntDType.uint4,
+        TorchIntDType.int4,
         None,
         None,
         UIntXWeightOnlyConfig,
-        {"dtype": torch.uint4, "group_size": None},
+        {"dtype": torch.int4, "group_size": None},
     ),
     (TorchIntDType.int8, None, 32, Int8WeightOnlyConfig, {"group_size": 32}),
     (TorchIntDType.int4, None, 4, Int4WeightOnlyConfig, {"group_size": 4}),
@@ -217,9 +217,7 @@ class TestQuantizationCallback:
         )
 
     @require_torch_2_6_0
-    def test_qat_callback_fake_quant_after_n_steps(
-        self, model, trainer_state
-    ):  # pylint: disable=redefined-outer-name
+    def test_qat_callback_fake_quant_after_n_steps(self, model, trainer_state):  # pylint: disable=redefined-outer-name
         cfg = QATConfig(
             weight_dtype="int8",
             activation_dtype="int8",
@@ -254,7 +252,8 @@ class TestQuantizationCallback:
         assert not model.model.embed_tokens.weight_fake_quantizer.enabled
         assert not model.lm_head.weight_fake_quantizer.enabled
 
-        trainer_state.global_step = 100
+        trainer_state = {}  # Define trainer_state as a dictionary or appropriate structure
+        trainer_state["global_step"] = 100
         qat_callback.on_step_begin(
             args=None,
             state=trainer_state,
@@ -265,9 +264,9 @@ class TestQuantizationCallback:
         assert model.lm_head.weight_fake_quantizer.enabled
 
     @require_torch_2_6_0
-    def test_qat_callback_fake_quant_after_n_steps_is_none(
-        self, model, trainer_state
-    ):  # pylint: disable=redefined-outer-name
+    def test_qat_callback_fake_quant_after_n_steps_is_none(self, model, trainer_state):  # pylint: disable=redefined-outer-name
+        if torch.__version__ < "2.6.0":
+            pytest.skip("Torch version must be 2.6.0 or higher")
         cfg = QATConfig(
             weight_dtype="int8",
             activation_dtype="int8",
@@ -309,9 +308,9 @@ class TestConvertQATModelForPTQ:
     """
 
     @require_torch_2_6_0
-    def test_convert_qat_model_for_ptq(
-        self, model
-    ):  # pylint: disable=redefined-outer-name
+    def test_convert_qat_model_for_ptq(self, model):  # pylint: disable=redefined-outer-name
+        if torch.__version__ < "2.6.0":
+            pytest.skip("Torch version must be 2.6.0 or higher")
         config = QATConfig(
             weight_dtype="int8",
             activation_dtype="int8",
