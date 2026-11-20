@@ -1100,7 +1100,7 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_qat_config(cls, data):
-        qat_cfg = data.get("qat", {})
+        qat_cfg = data.get("qat") if data is not None else {}
         if not qat_cfg:
             return data
 

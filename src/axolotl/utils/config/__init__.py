@@ -289,6 +289,9 @@ def validate_config(
                 "Both capabilities and env_capabilities must be provided or not provided."
             )
 
+        if cfg is None:
+            raise ValueError("Configuration cannot be None")
+
         return DictDefault(
             dict(
                 AxolotlConfigWCapabilities(

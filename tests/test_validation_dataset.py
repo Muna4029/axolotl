@@ -4,7 +4,6 @@ import warnings
 from typing import Optional
 
 import pytest
-
 from axolotl.utils.config import validate_config
 from axolotl.utils.dict import DictDefault
 from axolotl.utils.schemas.datasets import ChatTemplate
@@ -286,7 +285,8 @@ class TestValidationCheckDatasetConfig(BaseValidation):
             }
         )
 
-        validate_config(cfg)
+        if cfg is not None:
+            validate_config(cfg)
 
         # Check that deprecation is not thrown for non-sharegpt type
         cfg = DictDefault(
@@ -320,7 +320,8 @@ class TestValidationCheckDatasetConfig(BaseValidation):
             }
         )
 
-        validate_config(cfg)
+        if cfg is not None:
+            validate_config(cfg)
 
 
 class TestOptimizerValidation(BaseValidation):
@@ -343,8 +344,9 @@ class TestOptimizerValidation(BaseValidation):
             }
         )
 
-        with pytest.raises(ValueError, match=r".*is currently incompatible with*"):
-            validate_config(cfg)
+        if cfg is not None:
+            with pytest.raises(ValueError, match=r".*is currently incompatible with*"):
+                validate_config(cfg)
 
     def test_muon_fsdp(self, minimal_cfg):
         cfg = DictDefault(
