@@ -18,6 +18,7 @@ Module for the Plugin for Cut Cross Entropy integration with Axolotl.
 Cut Cross Entropy is an optimized implementation of cross entropy loss
 from Apple's ML team.
 """
+
 import importlib
 from functools import partial
 
@@ -62,6 +63,11 @@ class CutCrossEntropyPlugin(BasePlugin):
         if cce_spec is None:
             raise ImportError(_CCE_INSTALL_MESSAGE)
 
+        # Check if cut_cross_entropy is installed
+        cce_spec = importlib.util.find_spec("cut_cross_entropy")
+        if cce_spec is None:
+            raise ImportError(_CCE_INSTALL_MESSAGE)
+
         cce_spec_transformers = importlib.util.find_spec(
             "cut_cross_entropy.transformers"
         )
@@ -69,6 +75,18 @@ class CutCrossEntropyPlugin(BasePlugin):
             raise ImportError(
                 "Transformers support is not installed. " + _CCE_INSTALL_MESSAGE
             )
+
+        # Check if Axolotl's cce fork is installed
+        try:
+            from cut_cross_entropy.transformers.patch import AXOLOTL_CCE_FORK
+
+            if not AXOLOTL_CCE_FORK:
+                raise ImportError
+        except ImportError as e:
+            raise ImportError(
+                "Axolotl's fork of cut_cross_entropy is not installed. "
+                + _CCE_INSTALL_MESSAGE
+            ) from e
 
         # Check if Axolotl's cce fork is installed
         try:
@@ -106,9 +124,7 @@ class CutCrossEntropyPlugin(BasePlugin):
         """
         from cut_cross_entropy.transformers.patch import PATCH_FNS
 
-        def patch_generic(
-            maybe_model, patch_options, model_type: str
-        ):  # pylint: disable=unused-argument
+        def patch_generic(maybe_model, patch_options, model_type: str):  # pylint: disable=unused-argument
             import cut_cross_entropy.transformers.llama
             from cut_cross_entropy.transformers.llama import cce_forward
 
