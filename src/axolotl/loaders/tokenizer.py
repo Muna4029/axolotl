@@ -73,9 +73,9 @@ def modify_tokenizer_files(
                 for token_id, new_value in token_id_mappings.items():
                     token_id_str = str(token_id)
                     if token_id_str in config_data["added_tokens_decoder"]:
-                        config_data["added_tokens_decoder"][token_id_str][
-                            "content"
-                        ] = new_value
+                        config_data["added_tokens_decoder"][token_id_str]["content"] = (
+                            new_value
+                        )
                     else:
                         raise ValueError(
                             f"Token ID {token_id_str} not found in added_tokens_decoder"
@@ -256,7 +256,7 @@ def load_tokenizer(cfg: DictDefault) -> PreTrainedTokenizer:
     # ```
     if additional_special_tokens is not None:
         tokenizer.add_special_tokens(
-            {"additional_special_tokens": additional_special_tokens}
+            {"additional_special_tokens": additional_special_tokens.split(", ")}
         )
 
     if is_main_process(use_environ=True):
