@@ -280,6 +280,8 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
     if not isinstance(train_dataset, IterableDataset):
         filter_map_kwargs["num_proc"] = cfg.dataset_processes
         filter_map_kwargs["load_from_cache_file"] = not cfg.is_preprocess
+    if prior_len is None:
+        LOG.warning("prior_len is None, check train_dataset input")
 
     drop_long_kwargs = {}
     if filter_map_kwargs:
@@ -290,7 +292,7 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
         **filter_map_kwargs,
         **drop_long_kwargs,
     )
-    if prior_len:
+    if prior_len is not None:
         dropped = prior_len - len(train_dataset)
         if dropped:
             LOG.warning(
@@ -308,7 +310,7 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
             **filter_map_kwargs,
             **drop_long_kwargs,
         )
-        if prior_len:
+        if prior_len is not None:
             dropped = prior_len - len(eval_dataset)
             if dropped:
                 LOG.warning(
@@ -316,12 +318,15 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
                 )
 
     if cfg.group_by_length:
-        train_dataset = train_dataset.map(
-            add_length,
-            num_proc=cfg.dataset_processes,
-            load_from_cache_file=not cfg.is_preprocess,
-            desc="Group By Length",
-        )
+        if "add_length" not in globals():
+            LOG.error("add_length function is not defined or imported.")
+        else:
+            train_dataset = train_dataset.map(
+                add_length,
+                num_proc=cfg.dataset_processes,
+                load_from_cache_file=not cfg.is_preprocess,
+                desc="Group By Length",
+            )
 
     if cfg.use_pose:
         pose_kwargs = {}
@@ -333,12 +338,15 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
             split_on_token_ids=cfg.pose_split_on_token_ids,
             **pose_kwargs,
         )
-        train_dataset = train_dataset.map(
-            pose_fn,
-            num_proc=cfg.dataset_processes,
-            load_from_cache_file=not cfg.is_preprocess,
-            desc="Add position_id column (PoSE)",
-        )
+        if "pose_fn" not in globals():
+            LOG.error("pose_fn function is not defined or imported.")
+        else:
+            train_dataset = train_dataset.map(
+                pose_fn,
+                num_proc=cfg.dataset_processes,
+                load_from_cache_file=not cfg.is_preprocess,
+                desc="Add position_id column (PoSE)",
+            )
         train_dataset = train_dataset.sort("sequence_len")
         if cfg.eval_sample_packing is not False:
             if eval_dataset:
@@ -352,12 +360,15 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
         drop_long_kwargs = {}
         if filter_map_kwargs:
             drop_long_kwargs["desc"] = "Add position_id column (Sample Packing)"
-        train_dataset = train_dataset.map(
-            add_position_ids,
-            batched=True,
-            **filter_map_kwargs,
-            **drop_long_kwargs,
-        )
+        if "add_position_ids" not in globals():
+            LOG.error("add_position_ids function is not defined or imported.")
+        else:
+            train_dataset = train_dataset.map(
+                add_position_ids,
+                batched=True,
+                **filter_map_kwargs,
+                **drop_long_kwargs,
+            )
         if cfg.eval_sample_packing:
             if eval_dataset:
                 eval_dataset = eval_dataset.map(
@@ -366,6 +377,8 @@ def process_datasets_for_packing(cfg, train_dataset, eval_dataset):
                     **drop_long_kwargs,
                 )
 
+    if train_dataset is None or eval_dataset is None:
+        LOG.error("train_dataset or eval_dataset is None, check previous operations.")
     return train_dataset, eval_dataset
 
 

@@ -250,7 +250,7 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
         # Accelerator.free_memory() will destroy the references, so
         # we need to store the non-prepared version for eval dataloaders.
         # fmt: off
-        if dataloader_key is not None and self.args.dataloader_persistent_workers:
+        if dataloader is not None and dataloader_key is not None and self.args.dataloader_persistent_workers:
             if hasattr(self, "_eval_dataloaders"):
                 self._eval_dataloaders[dataloader_key] = dataloader  # type: ignore  # pylint: disable=access-member-before-definition
             else:
@@ -283,8 +283,10 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
             dataloader_params["sampler"] = self._get_bench_sampler(bench_dataset)
             dataloader_params["drop_last"] = self.args.dataloader_drop_last
 
-        return DataLoader(bench_dataset, **dataloader_params)
-        # return self.accelerator.prepare(DataLoader(bench_dataset, **dataloader_params))
+        dataloader = DataLoader(bench_dataset, **dataloader_params)
+        return self.accelerator.prepare(
+            dataloader
+        )  # return self.accelerator.prepare(DataLoader(bench_dataset, **dataloader_params))
 
     @override
     def compute_loss(
@@ -304,16 +306,34 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
                 num_items_in_batch=num_items_in_batch,
             )
 
-        return super().compute_loss(
-            model,
-            inputs,
-            return_outputs=return_outputs,
-            num_items_in_batch=num_items_in_batch,
+        return (
+            super().compute_loss(
+                model,
+                inputs,
+                return_outputs=return_outputs,
+                num_items_in_batch=num_items_in_batch,
+            )
+            if hasattr(super(), "compute_loss")
+            else None
         )
 
     @staticmethod
     def orpo_concatenate_inputs(inputs, label_pad_token=-100, pad_token=0, device=None):
         concatenated_batch = {}
+
+        if not all(
+            key in inputs
+            for key in [
+                "input_ids",
+                "rejected_input_ids",
+                "labels",
+                "rejected_labels",
+                "attention_mask",
+                "rejected_attention_mask",
+                "prompt_attention_mask",
+            ]
+        ):
+            raise ValueError("Input dictionary is missing required keys.")
 
         max_length = max(
             inputs["input_ids"].shape[1], inputs["rejected_input_ids"].shape[1]
@@ -379,7 +399,7 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
                 dim=-1
             )
 
-        return loss
+        return loss if loss != 0 else None
 
     def orpo_compute_logps(
         self, prompt_attention_mask, chosen_inputs, chosen_attention_mask, logits
@@ -470,7 +490,13 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
         metrics["log_odds"] = torch.mean(log_odds).cpu().item()
         self.store_metrics(metrics, train_eval="train")
 
-        return (loss, outputs_pos) if return_outputs else loss
+        return (
+            (loss, outputs_pos)
+            if return_outputs
+            else loss
+            if loss is not None
+            else None
+        )
 
     @wraps(Trainer.push_to_hub)
     def push_to_hub(self, *args, **kwargs) -> str:
@@ -498,9 +524,7 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
 
         return res
 
-    def additional_accelerator_args(
-        self, fp8=None, **kwargs
-    ):  # pylint: disable=unused-argument
+    def additional_accelerator_args(self, fp8=None, **kwargs):  # pylint: disable=unused-argument
         ret_kwargs = {}
         if fp8:
             from accelerate.utils import AORecipeKwargs
@@ -522,8 +546,9 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
         # logs either has 'loss' or 'eval_loss'
         train_eval = "train" if "loss" in logs else "eval"
         # Add averaged stored metrics to logs
-        for key, metrics in self._stored_metrics[train_eval].items():
-            logs[key] = torch.tensor(metrics).mean().item()
+        if train_eval in self._stored_metrics and self._stored_metrics[train_eval]:
+            for key, metrics in self._stored_metrics[train_eval].items():
+                logs[key] = torch.tensor(metrics).mean().item()
         del self._stored_metrics[train_eval]
 
         return super().log(logs, start_time)
@@ -531,7 +556,11 @@ class AxolotlTrainer(SchedulerMixin, OptimizerMixin, RngLoaderMixin, Trainer):
     def store_metrics(
         self, metrics: dict[str, float], train_eval: Literal["train", "eval"] = "train"
     ) -> None:
+        if train_eval not in self._stored_metrics:
+            self._stored_metrics[train_eval] = {}
         for key, value in metrics.items():
+            if key not in self._stored_metrics[train_eval]:
+                self._stored_metrics[train_eval][key] = []
             self._stored_metrics[train_eval][key].append(value)
 
     def _save_checkpoint(self, model, trial, **kwargs):
