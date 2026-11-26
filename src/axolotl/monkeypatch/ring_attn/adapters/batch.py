@@ -15,22 +15,83 @@ from typing import Callable
 import torch
 import torch.distributed as dist
 import transformers
-import transformers.modeling_flash_attention_utils
-from ring_flash_attn import ring_flash_attn_func
-from ring_flash_attn.adapters.hf_adapter import check_params
-from transformers.modeling_flash_attention_utils import (
-    _flash_supports_window_size,
-    is_flash_attn_greater_or_equal,
-)
-from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+
+# Optional/third-party imports may not be available in all environments or
+# across different transformers versions. Guard these imports and provide
+# sensible defaults so static analysis and runtime failures are avoided.
+modeling_flash_attention_utils = None
+ring_flash_attn_func = None
+check_params = None
+_flash_supports_window_size = False
+is_flash_attn_greater_or_equal = lambda v: False
+ALL_ATTENTION_FUNCTIONS = None
+
+try:
+    import transformers.modeling_flash_attention_utils as modeling_flash_attention_utils
+except Exception:
+    modeling_flash_attention_utils = None
+
+try:
+    from ring_flash_attn import ring_flash_attn_func as _ring_flash_attn_func
+
+    ring_flash_attn_func = _ring_flash_attn_func
+except Exception:
+    ring_flash_attn_func = None
+
+try:
+    from ring_flash_attn.adapters.hf_adapter import check_params as _check_params
+
+    check_params = _check_params
+except Exception:
+    check_params = None
+
+# Prefer attributes from the imported module if available, otherwise fall back
+# to trying to import the names directly (for environments where the module
+# is structured differently). If nothing is available, keep the safe defaults.
+try:
+    if modeling_flash_attention_utils is not None:
+        _flash_supports_window_size = getattr(
+            modeling_flash_attention_utils, "_flash_supports_window_size", False
+        )
+        is_flash_attn_greater_or_equal = getattr(
+            modeling_flash_attention_utils,
+            "is_flash_attn_greater_or_equal",
+            lambda v: False,
+        )
+    else:
+        from transformers.modeling_flash_attention_utils import (
+            _flash_supports_window_size as _flash_supports_window_size,
+            is_flash_attn_greater_or_equal as is_flash_attn_greater_or_equal,
+        )
+except Exception:
+    # Keep defaults if imports/attributes are missing
+    pass
+
+try:
+    from transformers.modeling_utils import (
+        ALL_ATTENTION_FUNCTIONS as _ALL_ATTENTION_FUNCTIONS,
+    )
+
+    ALL_ATTENTION_FUNCTIONS = _ALL_ATTENTION_FUNCTIONS
+except Exception:
+    ALL_ATTENTION_FUNCTIONS = None
 
 from axolotl.utils.schemas.enums import RingAttnFunc
 
-RING_ATTN_FUNC_MAPPING = {
-    RingAttnFunc.BATCH_RING: torch.compile(ring_flash_attn_func),
-    # RingAttnFunc.BATCH_ZIGZAG: torch.compile(zigzag_ring_flash_attn_func),
-    # RingAttnFunc.BATCH_STRIPE: torch.compile(stripe_flash_attn_func),
-}
+RING_ATTN_FUNC_MAPPING = {}
+# Compile and register available ring attention implementations lazily so
+# module import doesn't fail if the underlying implementation is missing.
+try:
+    if ring_flash_attn_func is not None:
+        RING_ATTN_FUNC_MAPPING[RingAttnFunc.BATCH_RING] = torch.compile(
+            ring_flash_attn_func
+        )
+except Exception:
+    # If compilation fails or the function is unavailable, leave the mapping empty
+    RING_ATTN_FUNC_MAPPING = {}
+# Ring variants commented out for potential future support
+# RingAttnFunc.BATCH_ZIGZAG: torch.compile(zigzag_ring_flash_attn_func),
+# RingAttnFunc.BATCH_STRIPE: torch.compile(stripe_flash_attn_func),
 
 
 def create_flash_attn_forward(

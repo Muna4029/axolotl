@@ -43,7 +43,12 @@ from trl.trainer.utils import pad
 
 from axolotl.core.trainers.grpo.sampler import SequenceParallelRepeatRandomSampler
 from axolotl.core.trainers.mixins import RngLoaderMixin, SchedulerMixin
-from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+try:
+    from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+except Exception:  # pragma: no cover - guard import for optional dependency
+    # The optional ring_attn monkeypatch may not be available in all environments
+    # Fall back to None so static analysis and runtime import failures don't break CI
+    get_ring_attn_group = None
 
 if is_peft_available():
     # pylint: disable=unused-import

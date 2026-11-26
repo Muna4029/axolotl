@@ -10,10 +10,19 @@ from torch.utils.hooks import RemovableHandle
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.utils import ModelOutput
 
-from axolotl.monkeypatch.attention.ring_attn.patch import (
-    get_ring_attn_group,
-    update_ring_attn_params,
-)
+try:
+    from axolotl.monkeypatch.attention.ring_attn.patch import (
+        get_ring_attn_group,
+        update_ring_attn_params,
+    )
+except (ImportError, ModuleNotFoundError):
+    # Use dynamic import as a fallback to avoid static linter (pylint) import resolution errors
+    import importlib
+
+    module = importlib.import_module("axolotl.monkeypatch.attention.ring_attn.patch")
+    get_ring_attn_group = getattr(module, "get_ring_attn_group")
+    update_ring_attn_params = getattr(module, "update_ring_attn_params")
+
 from axolotl.utils.schemas.enums import RingAttnFunc
 
 
