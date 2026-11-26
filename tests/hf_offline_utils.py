@@ -24,6 +24,30 @@ def reload_modules(hf_hub_offline):
     reset_sessions()
 
 
+def _set_hf_offline(value):
+    """Set HF_HUB_OFFLINE env var to the given boolean value and reload modules.
+    Returns the original environment value (or None if unset).
+    """
+    original = os.getenv("HF_HUB_OFFLINE")
+    os.environ["HF_HUB_OFFLINE"] = "1" if bool(value) else "0"
+    reload_modules(bool(value))
+    return original
+
+
+def _restore_hf_offline(original):
+    """Restore HF_HUB_OFFLINE from original and reload modules."""
+    if original is not None:
+        os.environ["HF_HUB_OFFLINE"] = original
+        # Interpret the original value as boolean: recognize '1', 'true', 'yes' as truthy
+        val = str(original).lower()
+        reload_modules(val in ("1", "true", "yes"))
+    else:
+        # Remove the environment variable if it wasn't set originally
+        if "HF_HUB_OFFLINE" in os.environ:
+            del os.environ["HF_HUB_OFFLINE"]
+        reload_modules(False)
+
+
 def enable_hf_offline(test_func):
     """
     test decorator that sets HF_HUB_OFFLINE environment variable to True and restores it after the test even if the test fails.
@@ -33,24 +57,11 @@ def enable_hf_offline(test_func):
 
     @wraps(test_func)
     def wrapper(*args, **kwargs):
-        # Save the original value of HF_HUB_OFFLINE environment variable
-        original_hf_offline = os.getenv("HF_HUB_OFFLINE")
-
-        # Set HF_OFFLINE environment variable to True
-        os.environ["HF_HUB_OFFLINE"] = "1"
-
-        reload_modules(True)
+        original = _set_hf_offline(True)
         try:
-            # Run the test function
             return test_func(*args, **kwargs)
         finally:
-            # Restore the original value of HF_HUB_OFFLINE environment variable
-            if original_hf_offline is not None:
-                os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
-            else:
-                del os.environ["HF_HUB_OFFLINE"]
-                reload_modules(False)
+            _restore_hf_offline(original)
 
     return wrapper
 
@@ -64,24 +75,11 @@ def disable_hf_offline(test_func):
 
     @wraps(test_func)
     def wrapper(*args, **kwargs):
-        # Save the original value of HF_HUB_OFFLINE environment variable
-        original_hf_offline = os.getenv("HF_HUB_OFFLINE")
-
-        # Set HF_OFFLINE environment variable to True
-        os.environ["HF_HUB_OFFLINE"] = "0"
-
-        reload_modules(False)
+        original = _set_hf_offline(False)
         try:
-            # Run the test function
             return test_func(*args, **kwargs)
         finally:
-            # Restore the original value of HF_HUB_OFFLINE environment variable
-            if original_hf_offline is not None:
-                os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
-            else:
-                del os.environ["HF_HUB_OFFLINE"]
-                reload_modules(False)
+            _restore_hf_offline(original)
 
     return wrapper
 
@@ -93,14 +91,10 @@ def hf_offline_context(hf_hub_offline):
     :param hf_hub_offline: The new value for HF_HUB_OFFLINE.
     :return: A context manager.
     """
-    original_hf_offline = os.getenv("HF_HUB_OFFLINE")
-    os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
-    reload_modules(bool(hf_hub_offline))
-    yield
-    # Restore the original value of HF_HUB_OFFLINE environment variable
-    if original_hf_offline is not None:
-        os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-        reload_modules(bool(original_hf_offline))
-    else:
-        del os.environ["HF_HUB_OFFLINE"]
-        reload_modules(False)
+    original = os.getenv("HF_HUB_OFFLINE")
+    # Use the helper to set the desired value (accepts truthy/falsy values)
+    _set_hf_offline(hf_hub_offline)
+    try:
+        yield
+    finally:
+        _restore_hf_offline(original)

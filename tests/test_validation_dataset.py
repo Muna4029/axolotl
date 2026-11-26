@@ -36,6 +36,41 @@ class BaseValidation:
     def inject_fixtures(self, caplog):
         self._caplog = caplog
 
+    def _check_dataset(self, checked_cfg, cfg, dataset_index: int = 0, expect_global_chat_template=None, expect_dataset_chat_template=None):
+        """Helper to assert common dataset/config expectations used across tests.
+
+        - If expect_global_chat_template is False, asserts checked_cfg.chat_template is None.
+        - If expect_global_chat_template is not None and not False, asserts equality with checked_cfg.chat_template.
+        - If expect_dataset_chat_template is not None, asserts equality with dataset.chat_template.
+        - Asserts common fields (path, type) and optional fields if present.
+        """
+        ds_checked = checked_cfg.datasets[dataset_index]
+        ds_cfg = cfg.datasets[dataset_index]
+
+        assert ds_checked.path == ds_cfg.path
+        assert ds_checked.type == ds_cfg.type
+
+        if hasattr(ds_cfg, "shards"):
+            assert ds_checked.shards == ds_cfg.shards
+
+        # Global chat template expectations
+        if expect_global_chat_template is False:
+            assert checked_cfg.chat_template is None
+        elif expect_global_chat_template is not None:
+            assert checked_cfg.chat_template == expect_global_chat_template
+
+        # Dataset-level chat template expectations
+        if expect_dataset_chat_template is not None:
+            assert ds_checked.chat_template == expect_dataset_chat_template
+
+        # Optional per-dataset fields
+        if hasattr(ds_cfg, "field_messages"):
+            assert ds_checked.field_messages == ds_cfg.field_messages
+        if hasattr(ds_cfg, "message_field_role"):
+            assert ds_checked.message_field_role == ds_cfg.message_field_role
+        if hasattr(ds_cfg, "message_field_content"):
+            assert ds_checked.message_field_content == ds_cfg.message_field_content
+
 
 class TestValidationCheckDatasetConfig(BaseValidation):
     """
@@ -58,12 +93,7 @@ class TestValidationCheckDatasetConfig(BaseValidation):
 
         checked_cfg = validate_config(cfg)
 
-        def _check_config():
-            assert checked_cfg.datasets[0].path == cfg.datasets[0].path
-            assert checked_cfg.datasets[0].type == cfg.datasets[0].type
-            assert checked_cfg.datasets[0].shards == cfg.datasets[0].shards
-
-        _check_config()
+        self._check_dataset(checked_cfg, cfg)
 
         checked_cfg = validate_config(
             cfg,
@@ -77,7 +107,7 @@ class TestValidationCheckDatasetConfig(BaseValidation):
             },
         )
 
-        _check_config()
+        self._check_dataset(checked_cfg, cfg)
 
     def test_dataset_default_chat_template_no_drop_param(self, minimal_cfg):
         cfg = DictDefault(
@@ -98,27 +128,12 @@ class TestValidationCheckDatasetConfig(BaseValidation):
 
         checked_cfg = validate_config(cfg)
 
-        def _check_config():
-            assert checked_cfg.datasets[0].path == cfg.datasets[0].path
-            assert checked_cfg.datasets[0].type == cfg.datasets[0].type
-            assert checked_cfg.chat_template is None
-            assert (
-                checked_cfg.datasets[0].chat_template == ChatTemplate.tokenizer_default
-            )
-            assert (
-                checked_cfg.datasets[0].field_messages == cfg.datasets[0].field_messages
-            )
-            assert checked_cfg.datasets[0].shards == cfg.datasets[0].shards
-            assert (
-                checked_cfg.datasets[0].message_field_role
-                == cfg.datasets[0].message_field_role
-            )
-            assert (
-                checked_cfg.datasets[0].message_field_content
-                == cfg.datasets[0].message_field_content
-            )
-
-        _check_config()
+        self._check_dataset(
+            checked_cfg,
+            cfg,
+            expect_global_chat_template=False,
+            expect_dataset_chat_template=ChatTemplate.tokenizer_default,
+        )
 
         checked_cfg = validate_config(
             cfg,
@@ -132,7 +147,12 @@ class TestValidationCheckDatasetConfig(BaseValidation):
             },
         )
 
-        _check_config()
+        self._check_dataset(
+            checked_cfg,
+            cfg,
+            expect_global_chat_template=False,
+            expect_dataset_chat_template=ChatTemplate.tokenizer_default,
+        )
 
     def test_dataset_partial_default_chat_template_no_drop_param(self, minimal_cfg):
         cfg = DictDefault(
@@ -154,27 +174,12 @@ class TestValidationCheckDatasetConfig(BaseValidation):
 
         checked_cfg = validate_config(cfg)
 
-        def _check_config():
-            assert checked_cfg.datasets[0].path == cfg.datasets[0].path
-            assert checked_cfg.datasets[0].type == cfg.datasets[0].type
-            assert checked_cfg.chat_template == ChatTemplate.chatml
-            assert (
-                checked_cfg.datasets[0].chat_template == ChatTemplate.tokenizer_default
-            )
-            assert (
-                checked_cfg.datasets[0].field_messages == cfg.datasets[0].field_messages
-            )
-            assert checked_cfg.datasets[0].shards == cfg.datasets[0].shards
-            assert (
-                checked_cfg.datasets[0].message_field_role
-                == cfg.datasets[0].message_field_role
-            )
-            assert (
-                checked_cfg.datasets[0].message_field_content
-                == cfg.datasets[0].message_field_content
-            )
-
-        _check_config()
+        self._check_dataset(
+            checked_cfg,
+            cfg,
+            expect_global_chat_template=ChatTemplate.chatml,
+            expect_dataset_chat_template=ChatTemplate.tokenizer_default,
+        )
 
         checked_cfg = validate_config(
             cfg,
@@ -188,7 +193,12 @@ class TestValidationCheckDatasetConfig(BaseValidation):
             },
         )
 
-        _check_config()
+        self._check_dataset(
+            checked_cfg,
+            cfg,
+            expect_global_chat_template=ChatTemplate.chatml,
+            expect_dataset_chat_template=ChatTemplate.tokenizer_default,
+        )
 
     def test_dataset_chatml_chat_template_no_drop_param(self, minimal_cfg):
         cfg = DictDefault(
@@ -211,27 +221,12 @@ class TestValidationCheckDatasetConfig(BaseValidation):
 
         checked_cfg = validate_config(cfg)
 
-        def _check_config():
-            assert checked_cfg.datasets[0].path == cfg.datasets[0].path
-            assert checked_cfg.datasets[0].type == cfg.datasets[0].type
-            assert checked_cfg.chat_template == cfg.chat_template
-            assert (
-                checked_cfg.datasets[0].chat_template == cfg.datasets[0].chat_template
-            )
-            assert (
-                checked_cfg.datasets[0].field_messages == cfg.datasets[0].field_messages
-            )
-            assert checked_cfg.datasets[0].shards == cfg.datasets[0].shards
-            assert (
-                checked_cfg.datasets[0].message_field_role
-                == cfg.datasets[0].message_field_role
-            )
-            assert (
-                checked_cfg.datasets[0].message_field_content
-                == cfg.datasets[0].message_field_content
-            )
-
-        _check_config()
+        self._check_dataset(
+            checked_cfg,
+            cfg,
+            expect_global_chat_template=cfg.chat_template,
+            expect_dataset_chat_template=cfg.datasets[0].chat_template,
+        )
 
         checked_cfg = validate_config(
             cfg,
@@ -245,7 +240,12 @@ class TestValidationCheckDatasetConfig(BaseValidation):
             },
         )
 
-        _check_config()
+        self._check_dataset(
+            checked_cfg,
+            cfg,
+            expect_global_chat_template=cfg.chat_template,
+            expect_dataset_chat_template=cfg.datasets[0].chat_template,
+        )
 
     def test_dataset_sharegpt_deprecation(self, minimal_cfg):
         cfg = DictDefault(
