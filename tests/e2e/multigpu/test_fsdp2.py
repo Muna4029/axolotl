@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 from accelerate.test_utils import execute_subprocess_async
-from transformers.testing_utils import get_torch_dist_unique_port
+from transformers.testing_utils import get_torch_dist_unique_port, require_torch_2_6_0
 
 from axolotl.utils.dict import DictDefault
 
