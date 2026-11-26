@@ -8,6 +8,11 @@ import yaml
 
 
 def get_output_dir(run_id):
+    """Return the output directory path for a given run id.
+
+    :param run_id: identifier for the run
+    :return: str, path to the output directory
+    """
     path = f"fine-tuning/{run_id}"
     return path
 
@@ -22,10 +27,23 @@ def make_valid_config(input_args):
     with open("config/config.yaml", "r", encoding="utf-8") as fin:
         all_args = yaml.safe_load(fin)
 
+    # yaml.safe_load can return None for empty/invalid YAML; ensure we have a dict
+    if not isinstance(all_args, dict) or all_args is None:
+        all_args = {}
+
+    # Prefer logging over printing to satisfy linters and CI hooks
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     if not input_args:
-        print("No args provided, using defaults")
+        logger.info("No args provided, using defaults")
     else:
-        all_args.update(input_args)
+        # Only update when input_args is a dict-like mapping
+        if isinstance(input_args, dict):
+            all_args.update(input_args)
+        else:
+            logger.warning("Provided input_args is not a dict; ignoring updates")
 
     # Create updated config path
     updated_config_path = "config/updated_config.yaml"
