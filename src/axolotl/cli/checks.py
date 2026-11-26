@@ -15,9 +15,10 @@ LOG = get_logger(__name__)
 
 def check_accelerate_default_config() -> None:
     """Logs at warning level if no accelerate config file is found."""
-    if Path(config_args.default_yaml_config_file).exists():
+    if not Path(config_args.default_yaml_config_file).exists():
         LOG.warning(
-            f"accelerate config file found at {config_args.default_yaml_config_file}. This can lead to unexpected errors"
+            "No accelerate config file found at %s. This can lead to unexpected errors",
+            config_args.default_yaml_config_file,
         )
 
 
