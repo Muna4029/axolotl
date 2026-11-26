@@ -1,8 +1,8 @@
-codecov
-codecov-cli
-pytest
-pytest-cov
-pytest-retry
-pytest-sugar
-pytest-xdist
-tbparse
+codecov>=2.0.0,<3.0
+codecov-cli>=2.0.0,<3.0
+pytest>=7.4,<8.0
+pytest-cov>=4.0,<5.0
+pytest-retry>=0.9,<1.0
+pytest-sugar>=0.9,<1.0
+pytest-xdist>=3.2,<4.0
+tbparse>=0.6,<1.0
