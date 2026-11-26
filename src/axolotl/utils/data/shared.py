@@ -61,7 +61,7 @@ def datasets_w_name_generator(dataset_configs: list[DictDefault]):
 
 
 def load_dataset_w_config(
-    config_dataset: DictDefault, use_auth_token: bool, streaming=False
+    config_dataset: DictDefault, use_auth_token: Optional[Union[str, bool]] = None, streaming=False
 ) -> Union[Dataset, DatasetDict]:
     """
     Load a dataset from a config
@@ -74,13 +74,17 @@ def load_dataset_w_config(
     # pylint: disable=invalid-name
     ds: Optional[Union[Dataset, DatasetDict]] = None  # pylint: disable=invalid-name
     ds_from_hub = False
+
+    # Normalize token to Optional[str] for huggingface_hub APIs
+    token_for_hub: Optional[str] = use_auth_token if isinstance(use_auth_token, str) else None
+
     try:
         # this is just a basic check to see if the path is a
         # valid HF dataset that's loadable
         snapshot_download(
             repo_id=config_dataset.path,
             repo_type="dataset",
-            token=use_auth_token,
+            token=token_for_hub,
             revision=config_dataset.revision,
             ignore_patterns=["*"],
         )
@@ -218,7 +222,7 @@ def load_dataset_w_config(
             name=config_dataset.name,
             streaming=streaming,
             data_files=config_dataset.data_files,
-            token=use_auth_token,
+            token=token_for_hub,
             revision=config_dataset.revision,
             trust_remote_code=config_dataset.trust_remote_code,
             **load_ds_kwargs,
