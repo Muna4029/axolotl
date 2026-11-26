@@ -2,12 +2,19 @@
 utils to get GPU info for the current environment
 """
 
-from accelerate.utils.environment import (
-    check_cuda_p2p_ib_support as accelerate_check_cuda_p2p_ib_support,
-)
-from accelerate.utils.environment import (
-    get_gpu_info,
-)
+from typing import Any, Callable
+
+# Defer importing accelerate until the functions are actually called to avoid
+# importing heavy/optional dependencies at module import time (which can
+# interfere with pre-commit / CI environment initialization).
+def _lazy_accelerate_func(attr: str) -> Callable[..., Any]:
+    def _caller(*args, **kwargs):
+        mod = __import__("accelerate.utils.environment", fromlist=[attr])
+        return getattr(mod, attr)(*args, **kwargs)
+    return _caller
+
+accelerate_check_cuda_p2p_ib_support = _lazy_accelerate_func("check_cuda_p2p_ib_support")
+get_gpu_info = _lazy_accelerate_func("get_gpu_info")
 
 
 def check_cuda_p2p_ib_support():
