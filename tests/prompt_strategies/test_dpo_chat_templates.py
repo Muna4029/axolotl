@@ -8,7 +8,7 @@ import pytest
 from datasets import Dataset
 from transformers import AutoTokenizer
 
-from axolotl.prompt_strategies.dpo.chat_template import default
+from axolotl.prompt_strategies.dpo.chat_template import default  # pylint: disable=not-callable
 from axolotl.utils.dict import DictDefault
 
 from tests.hf_offline_utils import enable_hf_offline
