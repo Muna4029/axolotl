@@ -5,17 +5,12 @@ HF Chat Templates prompt strategy
 # pylint: disable=too-many-lines
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, Set, Union
-
-from pydantic import BaseModel
-from transformers import ProcessorMixin
+from typing import TYPE_CHECKING, Any, Dict, List, Set
 
 from axolotl.prompt_strategies.jinja_template_analyzer import JinjaTemplateAnalyzer
 from axolotl.prompt_tokenizers import PromptTokenizingStrategy
 from axolotl.prompters import IGNORE_TOKEN_ID, Prompter
-from axolotl.utils.chat_templates import get_chat_template_from_config
 from axolotl.utils.logging import get_logger
-from axolotl.utils.schemas.datasets import DatasetConfig
 
 if TYPE_CHECKING:
     from axolotl.utils.mistral_tokenizer import HFMistralTokenizer
@@ -414,9 +409,7 @@ class ChatTemplateStrategy(PromptTokenizingStrategy):
                 add_generation_prompt=True,
                 images=images,
             )
-            tokenized_res = self.prompter.build_prompt(
-                turns, images=images
-            )  # type: ignore
+            tokenized_res = self.prompter.build_prompt(turns, images=images)  # type: ignore
             tokenized_prompt = {}
             if isinstance(tokenized_res, list):
                 input_ids = prompt_ids + tokenized_res[len(prompt_ids) :]
@@ -668,14 +661,23 @@ class ChatTemplateStrategy(PromptTokenizingStrategy):
 
         messages = self._get_messages(prompt)
 
-        possible_sys_turn = self.transform_message(messages[0])
+        # If there are messages, check the first to decide whether to prepend a system
+        # message from the prompt. If there are no messages, only include the system
+        # message if present in the prompt.
+        if messages:
+            possible_sys_turn = self.transform_message(messages[0])
 
-        if (
-            possible_sys_turn["role"] != "system"
-            and self.prompter.field_system in prompt
-        ):
-            turn = {"role": "system", "content": prompt[self.prompter.field_system]}
-            turns.append(turn)
+            if (
+                possible_sys_turn.get("role") != "system"
+                and self.prompter.field_system in prompt
+            ):
+                turn = {"role": "system", "content": prompt[self.prompter.field_system]}
+                turns.append(turn)
+        else:
+            if self.prompter.field_system in prompt:
+                turns.append(
+                    {"role": "system", "content": prompt[self.prompter.field_system]}
+                )
 
         for message in messages:
             transformed_message = self.transform_message(message)
@@ -690,7 +692,12 @@ class ChatTemplateStrategy(PromptTokenizingStrategy):
 
             turns.append(turn)
 
-        if self.prompter.drop_system_message and turns[0]["role"] == "system":
+        # Guard access to turns[0] in case turns is empty
+        if (
+            self.prompter.drop_system_message
+            and turns
+            and turns[0].get("role") == "system"
+        ):
             turns = turns[1:]
 
         return turns
@@ -714,49 +721,54 @@ class ChatTemplateStrategy(PromptTokenizingStrategy):
 
         # TODO handle reasoning_content with split_thinking
         # if the role is assistant that we want to use reasoning_content
-        if self.split_thinking and transformed_message["role"] == "assistant":
-            content = transformed_message["content"]
-            thinking_pairs = [
-                ("<think>", "</think>"),
-                ("<reasoning>", "</reasoning>"),
-                ("<|begin_of_thought|>", "<|end_of_thought|>"),
-            ]
-            content_pairs = [("<|begin_of_solution|>", "<|end_of_solution|>")]
-            for tpair in thinking_pairs:
-                # check if the thinking pair is in the content
-                if tpair[0] in content and tpair[1] in content:
-                    # find the start and end index of the thinking pair
-                    t_start_idx = content.find(tpair[0])
-                    t_end_idx = content.find(tpair[1])
+        if self.split_thinking and transformed_message.get("role") == "assistant":
+            content = transformed_message.get("content", "")
+            if content:
+                thinking_pairs = [
+                    ("<think>", "</think>"),
+                    ("<reasoning>", "</reasoning>"),
+                    ("<|begin_of_thought|>", "<|end_of_thought|>"),
+                ]
+                content_pairs = [("<|begin_of_solution|>", "<|end_of_solution|>")]
+                for tpair in thinking_pairs:
+                    # check if the thinking pair is in the content
+                    if tpair[0] in content and tpair[1] in content:
+                        # find the start and end index of the thinking pair
+                        t_start_idx = content.find(tpair[0])
+                        t_end_idx = content.find(tpair[1])
 
-                    # get the thinking content
-                    thinking_content = content[t_start_idx + len(tpair[0]) : t_end_idx]
-                    transformed_message["reasoning_content"] = thinking_content.strip()
+                        # get the thinking content
+                        thinking_content = content[
+                            t_start_idx + len(tpair[0]) : t_end_idx
+                        ]
+                        transformed_message["reasoning_content"] = (
+                            thinking_content.strip()
+                        )
 
-                    # take remainder of the content
-                    # strip whitespace from beginning of the remainder (thinking tokens)
-                    remainder = content[t_end_idx + len(tpair[1]) :].lstrip()
+                        # take remainder of the content
+                        # strip whitespace from beginning of the remainder (thinking tokens)
+                        remainder = content[t_end_idx + len(tpair[1]) :].lstrip()
 
-                    # check if the content pair is in the remainder
-                    cpair_found = False
-                    for cpair in content_pairs:
-                        if cpair[0] in remainder and cpair[1] in remainder:
-                            # find the start and end index of the content pair
-                            c_start_idx = remainder.find(cpair[0])
-                            c_end_idx = remainder.find(cpair[1])
+                        # check if the content pair is in the remainder
+                        cpair_found = False
+                        for cpair in content_pairs:
+                            if cpair[0] in remainder and cpair[1] in remainder:
+                                # find the start and end index of the content pair
+                                c_start_idx = remainder.find(cpair[0])
+                                c_end_idx = remainder.find(cpair[1])
 
-                            # get the content content
-                            content_content = remainder[
-                                c_start_idx + len(cpair[0]) : c_end_idx
-                            ]
-                            transformed_message["content"] = content_content.strip()
-                            cpair_found = True
-                            break
+                                # get the content content
+                                content_content = remainder[
+                                    c_start_idx + len(cpair[0]) : c_end_idx
+                                ]
+                                transformed_message["content"] = content_content.strip()
+                                cpair_found = True
+                                break
 
-                    # else, the content is the remainder
-                    if not cpair_found:
-                        transformed_message["content"] = remainder
-                    break
+                        # else, the content is the remainder
+                        if not cpair_found:
+                            transformed_message["content"] = remainder
+                        break
 
         # Determine which keys in the original message were not mapped
         mapped_values = set(self.prompter.message_property_mappings.values())

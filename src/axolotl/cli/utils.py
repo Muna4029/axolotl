@@ -39,9 +39,8 @@ def strip_optional_type(field_type: type | str | None):
             returns the input type unchanged.
     """
     if get_origin(field_type) is Union and type(None) in get_args(field_type):
-        field_type = next(
-            t for t in get_args(field_type) if not isinstance(t, NoneType)
-        )
+        # get_args returns types (e.g., NoneType), so compare types by identity
+        field_type = next(t for t in get_args(field_type) if t is not NoneType)
 
     return field_type
 
@@ -118,14 +117,15 @@ def add_options_from_config(config_class: Type[BaseModel]) -> Callable:
 
     def decorator(function: Callable) -> Callable:
         # Process model fields in reverse order for correct option ordering
-        for name, field in reversed(config_class.model_fields.items()):
+        for name, field in reversed(list(config_class.model_fields.items())):
             field_type = strip_optional_type(field.annotation)
 
             if field_type == bool:
                 field_name = name.replace("_", "-")
                 option_name = f"--{field_name}/--no-{field_name}"
+                # Click boolean flags expect a boolean default; use False as a safe default
                 function = click.option(
-                    option_name, default=None, help=field.description
+                    option_name, default=False, help=field.description
                 )(function)
             else:
                 option_name = f"--{name.replace('_', '-')}"
@@ -167,7 +167,7 @@ def build_command(base_cmd: list[str], options: dict[str, Any]) -> list[str]:
 
 
 def download_file(
-    file_info: tuple, raw_base_url: str, dest_path: Path, dir_prefix: str
+    file_info: tuple[str, str], raw_base_url: str, dest_path: Path, dir_prefix: str
 ) -> tuple[str, str]:
     """
     Download a single file and return its processing status.
@@ -194,13 +194,13 @@ def download_file(
             local_sha = hashlib.sha1(blob, usedforsecurity=False).hexdigest()
 
         if local_sha == remote_sha:
-            print(f"Skipping {file_path} (unchanged)")
+            LOG.info(f"Skipping {file_path} (unchanged)")
             return file_path, "unchanged"
 
-        print(f"Updating {file_path}")
-        status = "new"
+        LOG.info(f"Updating {file_path}")
+        status = "updated"
     else:
-        print(f"Downloading {file_path}")
+        LOG.info(f"Downloading {file_path}")
         status = "new"
 
     # Create directories if needed
@@ -216,7 +216,7 @@ def download_file(
 
         return file_path, status
     except (requests.RequestException, IOError) as request_error:
-        print(f"Error downloading {file_path}: {str(request_error)}")
+        LOG.error(f"Error downloading {file_path}: {str(request_error)}")
         return file_path, "error"
 
 
