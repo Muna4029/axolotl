@@ -7,12 +7,12 @@ import os
 import yaml
 
 
-def get_output_dir(run_id):
+def get_output_dir(run_id: str) -> str:
     path = f"fine-tuning/{run_id}"
     return path
 
 
-def make_valid_config(input_args):
+def make_valid_config(input_args: dict) -> str:
     """
     Creates and saves updated config file, returns the path to the new config
     :param input_args: dict of input args
@@ -37,7 +37,7 @@ def make_valid_config(input_args):
     return updated_config_path
 
 
-def set_config_env_vars(args: dict):
+def set_config_env_vars(args: dict) -> None:
     """
     Convert API arguments into environment variables.
     Handles nested dictionaries, lists, and special values.
@@ -46,7 +46,7 @@ def set_config_env_vars(args: dict):
         args (dict): The arguments dictionary from the API request
     """
 
-    def process_value(value):
+    def process_value(value: object) -> str:
         """Convert Python values to string format for environment variables"""
         if value is None:
             return ""
@@ -56,7 +56,7 @@ def set_config_env_vars(args: dict):
             return str(value)
         return str(value)
 
-    def set_env_vars(data, prefix=""):
+    def set_env_vars(data: dict, prefix: str = "") -> None:
         """Recursively set environment variables from nested dictionary"""
         for key, value in data.items():
             env_key = prefix + key.upper()

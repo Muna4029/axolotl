@@ -9,7 +9,7 @@ from functools import wraps
 from huggingface_hub.utils import reset_sessions
 
 
-def reload_modules(hf_hub_offline):
+def reload_modules(hf_hub_offline: bool) -> None:
     # Force reload of the modules that check this variable
     import importlib
 
@@ -24,7 +24,7 @@ def reload_modules(hf_hub_offline):
     reset_sessions()
 
 
-def enable_hf_offline(test_func):
+def enable_hf_offline(test_func: "Callable[..., Any]") -> "Callable[..., Any]":
     """
     test decorator that sets HF_HUB_OFFLINE environment variable to True and restores it after the test even if the test fails.
     :param test_func:
@@ -32,7 +32,7 @@ def enable_hf_offline(test_func):
     """
 
     @wraps(test_func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: "Any", **kwargs: "Any") -> "Any":
         # Save the original value of HF_HUB_OFFLINE environment variable
         original_hf_offline = os.getenv("HF_HUB_OFFLINE")
 
@@ -55,7 +55,7 @@ def enable_hf_offline(test_func):
     return wrapper
 
 
-def disable_hf_offline(test_func):
+def disable_hf_offline(test_func: "Callable[..., Any]") -> "Callable[..., Any]":
     """
     test decorator that sets HF_HUB_OFFLINE environment variable to False and restores it after the wrapped func
     :param test_func:
@@ -63,7 +63,7 @@ def disable_hf_offline(test_func):
     """
 
     @wraps(test_func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: "Any", **kwargs: "Any") -> "Any":
         # Save the original value of HF_HUB_OFFLINE environment variable
         original_hf_offline = os.getenv("HF_HUB_OFFLINE")
 
@@ -87,7 +87,7 @@ def disable_hf_offline(test_func):
 
 
 @contextmanager
-def hf_offline_context(hf_hub_offline):
+def hf_offline_context(hf_hub_offline: bool) -> "Iterator[None]":
     """
     Context manager that sets HF_HUB_OFFLINE environment variable to the given value.
     :param hf_hub_offline: The new value for HF_HUB_OFFLINE.

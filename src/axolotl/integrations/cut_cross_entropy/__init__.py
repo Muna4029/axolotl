@@ -41,10 +41,12 @@ class CutCrossEntropyPlugin(BasePlugin):
     Plugin for Cut Cross Entropy integration with Axolotl.
     """
 
-    def get_input_args(self):
+    from typing import Any
+
+    def get_input_args(self) -> str:
         return "axolotl.integrations.cut_cross_entropy.CutCrossEntropyArgs"
 
-    def _check_requirements(self):
+    def _check_requirements(self) -> None:
         """Check if all requirements are met."""
         # Check PyTorch version
 
@@ -66,7 +68,7 @@ class CutCrossEntropyPlugin(BasePlugin):
         if cce_spec_transformers is None:
             raise ImportError(_CCE_INSTALL_MESSAGE)
 
-    def pre_model_load(self, cfg):
+    def pre_model_load(self, cfg: Any) -> None:
         """Apply cut cross entropy before model loading if enabled."""
         if cfg.cut_cross_entropy:
             self._check_requirements()

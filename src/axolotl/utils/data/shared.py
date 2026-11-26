@@ -93,7 +93,7 @@ def datasets_with_name_generator(
 
 
 def load_dataset_with_config(
-    dataset_config: DictDefault, use_auth_token: bool, streaming=False
+    dataset_config: DictDefault, use_auth_token: bool, streaming: bool = False
 ) -> Dataset | IterableDataset:
     """Load a dataset from a config. Handles datasets that are stored locally, in the
     HuggingFace Hub, in a remote filesystem (S3, GCS, Azure, OCI), a URL, or

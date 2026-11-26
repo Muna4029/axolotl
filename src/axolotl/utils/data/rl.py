@@ -3,7 +3,7 @@
 import inspect
 import os
 from functools import partial
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, TypeVar, ParamSpec, cast
 
 from datasets import Dataset, DatasetDict
 from transformers import PreTrainedTokenizer
@@ -29,6 +29,12 @@ from axolotl.utils.data.utils import (
 from axolotl.utils.dict import DictDefault
 from axolotl.utils.logging import get_logger
 from axolotl.utils.schemas.enums import RLType
+
+# Create a typed alias for the (possibly untyped) decorator so mypy can
+# understand that applying it preserves the callable signature.
+P = ParamSpec("P")
+R = TypeVar("R")
+typed_retry_on_request_exceptions = cast(Callable[[Callable[P, R]], Callable[P, R]], retry_on_request_exceptions)
 
 LOG = get_logger(__name__)
 

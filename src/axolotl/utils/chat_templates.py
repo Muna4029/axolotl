@@ -107,7 +107,9 @@ def get_chat_template(
     raise ValueError(f"Template '{user_choice}' not found.")
 
 
-def extract_chat_template_args(cfg, ds_cfg: Optional[Dict[str, Any]] = None):
+def extract_chat_template_args(
+    cfg: Dict[str, Any], ds_cfg: Optional[Dict[str, Any]] = None
+) -> Tuple[str, Optional[str]]:
     if ds_cfg and ds_cfg.get("chat_template"):
         chat_template_choice = ds_cfg.get("chat_template") or _DEFAULT_TEMPLATE_CHOICE
         chat_template_jinja = ds_cfg.get("chat_template_jinja")
@@ -118,7 +120,7 @@ def extract_chat_template_args(cfg, ds_cfg: Optional[Dict[str, Any]] = None):
 
 
 def get_chat_template_from_config(
-    cfg,
+    cfg: Dict[str, Any],
     ds_cfg: Optional[Dict[str, Any]] = None,
     tokenizer: Optional["PreTrainedTokenizerBase"] = None,
 ) -> str:
@@ -132,7 +134,7 @@ def get_chat_template_from_config(
     )
 
 
-def register_chat_template(template_name: str, chat_template: str):
+def register_chat_template(template_name: str, chat_template: str) -> None:
     """
     Registers chat templates.
 
