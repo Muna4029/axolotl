@@ -847,8 +847,7 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
                 )
         else:
             if (
-                not self.merge_lora
-                and not self.is_preprocess
+                not self.is_preprocess
                 and (self.bf16 is True or self.bfloat16 is True)
             ):
                 raise ValueError(

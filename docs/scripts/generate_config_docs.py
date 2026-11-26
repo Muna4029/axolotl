@@ -48,51 +48,23 @@ class QuartoGenerator:
         if not class_node:
             return "unknown"
 
-        # Find the field assignment
+        # Find the field assignment or annotated assignment
         for node in class_node.body:
+            # handle: field: Type = ...
             if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
                 if node.target.id == field_name and node.annotation:
-                    # Convert the AST annotation back to source text
-                    return ast.unparse(node.annotation)
+                    try:
+                        return ast.unparse(node.annotation)
+                    except Exception:
+                        return "unknown"
+            # handle simple assignments like: field = ...
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == field_name:
+                        # No reliable annotation available from a plain Assign; fallback to unknown
+                        return "unknown"
 
         return "unknown"
-        """Format field type information in a readable way."""
-        # Handle fallback case where we only have basic info
-        if field_info.get("type") == "unknown":
-            return "unknown"
-
-        if "anyOf" in field_info:
-            types = []
-            is_optional = False
-
-            for option in field_info["anyOf"]:
-                if option.get("type") == "null":
-                    is_optional = True
-                elif option.get("type"):
-                    types.append(option["type"])
-                elif "$ref" in option:
-                    ref_name = option["$ref"].split("/")[-1]
-                    types.append(ref_name)
-
-            type_str = " | ".join(types) if types else "unknown"
-            return f"{type_str} | None" if is_optional else type_str
-
-        field_type = field_info.get("type", "unknown")
-
-        if field_type == "array":
-            items = field_info.get("items", {})
-            if items.get("type"):
-                item_type = items["type"]
-            elif "$ref" in items:
-                item_type = items["$ref"].split("/")[-1]
-            else:
-                item_type = "unknown"
-            return f"list[{item_type}]"
-
-        if field_type == "object":
-            return "dict"
-
-        return field_type
 
     def _extract_field_groups_from_source(
         self, model_class: type[BaseModel]
@@ -107,6 +79,7 @@ class QuartoGenerator:
                 {
                     "title": "Configuration Options",
                     "fields": list(model_class.model_fields.keys()),
+                    "description": None,
                 }
             ]
 
@@ -127,6 +100,7 @@ class QuartoGenerator:
                 {
                     "title": "Configuration Options",
                     "fields": list(model_class.model_fields.keys()),
+                    "description": None,
                 }
             ]
 
@@ -152,6 +126,7 @@ class QuartoGenerator:
                 {
                     "title": "Configuration Options",
                     "fields": list(model_class.model_fields.keys()),
+                    "description": None,
                 }
             ]
 
@@ -233,6 +208,7 @@ class QuartoGenerator:
                 {
                     "title": "Configuration Options",
                     "fields": list(model_class.model_fields.keys()),
+                    "description": None,
                 }
             )
 
