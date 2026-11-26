@@ -18,7 +18,7 @@ class QATConfig(BaseModel):
         default=None, description="Activation dtype"
     )
     weight_dtype: TorchIntDType = Field(
-        default=TorchIntDType.int8, description="Weight dtype"
+        default=getattr(TorchIntDType, "int8"), description="Weight dtype"
     )
     quantize_embedding: bool | None = Field(
         default=False, description="Quantize embedding"
@@ -32,9 +32,9 @@ class QATConfig(BaseModel):
     @classmethod
     def validate_dtype(cls, v: Any) -> TorchIntDType | None:
         if v == "int4":
-            return TorchIntDType.int4
+            return getattr(TorchIntDType, "int4")
         if v == "int8":
-            return TorchIntDType.int8
+            return getattr(TorchIntDType, "int8")
         raise ValueError(f"Invalid dtype: '{v}'. Must be one of: ['int4', 'int8']")
 
 
@@ -44,7 +44,7 @@ class PTQConfig(BaseModel):
     """
 
     weight_dtype: TorchIntDType = Field(
-        default=TorchIntDType.int8, description="Weight dtype"
+        default=getattr(TorchIntDType, "int8"), description="Weight dtype"
     )
     activation_dtype: TorchIntDType | None = Field(
         default=None, description="Activation dtype"
@@ -58,7 +58,7 @@ class PTQConfig(BaseModel):
     @classmethod
     def validate_dtype(cls, v: Any) -> TorchIntDType | None:
         if v == "int4":
-            return TorchIntDType.int4
+            return getattr(TorchIntDType, "int4")
         if v == "int8":
-            return TorchIntDType.int8
+            return getattr(TorchIntDType, "int8")
         raise ValueError(f"Invalid dtype: '{v}'. Must be one of: ['int4', 'int8']")

@@ -54,24 +54,24 @@ def model():
 ptq_config_test_cases = [
     # weight_dtype, activation_dtype, group_size, expected_type, expected_params
     (
-        TorchIntDType.uint4,
+        getattr(TorchIntDType, "uint4"),
         None,
         None,
         UIntXWeightOnlyConfig,
         {"dtype": torch.uint4, "group_size": None},
     ),
-    (TorchIntDType.int8, None, 32, Int8WeightOnlyConfig, {"group_size": 32}),
-    (TorchIntDType.int4, None, 4, Int4WeightOnlyConfig, {"group_size": 4}),
+    (getattr(TorchIntDType, "int8"), None, 32, Int8WeightOnlyConfig, {"group_size": 32}),
+    (getattr(TorchIntDType, "int4"), None, 4, Int4WeightOnlyConfig, {"group_size": 4}),
     (
-        TorchIntDType.int4,
-        TorchIntDType.int4,
+        getattr(TorchIntDType, "int4"),
+        getattr(TorchIntDType, "int4"),
         None,
         Int4DynamicActivationInt4WeightConfig,
         {},
     ),
     (
-        TorchIntDType.int8,
-        TorchIntDType.int8,
+        getattr(TorchIntDType, "int8"),
+        getattr(TorchIntDType, "int8"),
         None,
         Int8DynamicActivationInt8WeightConfig,
         {},
@@ -80,13 +80,13 @@ ptq_config_test_cases = [
 
 ptq_test_cases = [
     # weight_dtype, activation_dtype, group_size, quantize_embedding, expected_exception
-    (TorchIntDType.int8, None, 8, False, None),
-    (TorchIntDType.int4, None, 4, True, None),
-    (TorchIntDType.uint4, None, 8, False, None),
-    (TorchIntDType.int4, TorchIntDType.int4, 8, False, None),
-    (TorchIntDType.int8, TorchIntDType.int8, 8, True, None),
-    (TorchIntDType.int8, None, None, False, ValueError),
-    (TorchIntDType.int4, None, None, False, ValueError),
+    (getattr(TorchIntDType, "int8"), None, 8, False, None),
+    (getattr(TorchIntDType, "int4"), None, 4, True, None),
+    (getattr(TorchIntDType, "uint4"), None, 8, False, None),
+    (getattr(TorchIntDType, "int4"), getattr(TorchIntDType, "int4"), 8, False, None),
+    (getattr(TorchIntDType, "int8"), getattr(TorchIntDType, "int8"), 8, True, None),
+    (getattr(TorchIntDType, "int8"), None, None, False, ValueError),
+    (getattr(TorchIntDType, "int4"), None, None, False, ValueError),
 ]
 
 
@@ -103,6 +103,12 @@ class TestQuantization:
     def test_get_ptq_config(
         self, weight_dtype, activation_dtype, group_size, expected_type, expected_params
     ):
+        # ensure we have enum instances when test data provides string names
+        if isinstance(weight_dtype, str):
+            weight_dtype = TorchIntDType[weight_dtype]
+        if isinstance(activation_dtype, str):
+            activation_dtype = TorchIntDType[activation_dtype]
+
         config = get_ptq_config(weight_dtype, activation_dtype, group_size)
 
         assert isinstance(config, expected_type)
@@ -121,10 +127,10 @@ class TestQuantization:
                 assert getattr(config, param_name) == param_value
 
     @pytest.mark.parametrize(
-        "weight_dtype", [TorchIntDType.int8, TorchIntDType.int4, TorchIntDType.uint4]
+        "weight_dtype", [getattr(TorchIntDType, "int8"), getattr(TorchIntDType, "int4"), getattr(TorchIntDType, "uint4")]
     )
     @pytest.mark.parametrize(
-        "activation_dtype", [None, TorchIntDType.int4, TorchIntDType.int8]
+        "activation_dtype", [None, getattr(TorchIntDType, "int4"), getattr(TorchIntDType, "int8")]
     )
     @pytest.mark.parametrize("group_size", [4, 8])
     @pytest.mark.parametrize("quantize_embedding", [False, True])
@@ -140,7 +146,7 @@ class TestQuantization:
             assert hasattr(model.model.embed_tokens, "weight_fake_quantizer")
             assert (
                 model.model.embed_tokens.weight_fake_quantizer.config.dtype
-                == weight_dtype.value
+                == getattr(weight_dtype, "value", weight_dtype)
             )
             assert (
                 model.model.embed_tokens.weight_fake_quantizer.config.group_size
@@ -151,13 +157,13 @@ class TestQuantization:
             if isinstance(child, torch.nn.Linear):
                 assert isinstance(child, FakeQuantizedLinear)
                 assert hasattr(child, "weight_fake_quantizer")
-                assert child.weight_fake_quantizer.config.dtype == weight_dtype.value
+                assert child.weight_fake_quantizer.config.dtype == getattr(weight_dtype, "value", weight_dtype)
                 assert child.weight_fake_quantizer.config.group_size == group_size
                 if activation_dtype:
                     assert hasattr(child, "activation_fake_quantizer")
                     assert (
                         child.activation_fake_quantizer.config.dtype
-                        == activation_dtype.value
+                        == getattr(activation_dtype, "value", activation_dtype)
                     )
                 else:
                     assert child.activation_fake_quantizer is None
@@ -176,6 +182,12 @@ class TestQuantization:
         quantize_embedding,
         expected_exception,
     ):  # pylint: disable=redefined-outer-name
+        # convert string names to enum values for compatibility
+        if isinstance(weight_dtype, str):
+            weight_dtype = TorchIntDType[weight_dtype]
+        if isinstance(activation_dtype, str):
+            activation_dtype = TorchIntDType[activation_dtype]
+
         if expected_exception:
             with pytest.raises(expected_exception):
                 quantize_model_for_ptq(
