@@ -7,12 +7,12 @@ import os
 import yaml
 
 
-def get_output_dir(run_id):
+def get_output_dir(run_id):  # pylint: disable=duplicate-code
     path = f"fine-tuning/{run_id}"
     return path
 
 
-def make_valid_config(input_args):
+def make_valid_config(input_args):  # pylint: disable=duplicate-code
     """
     Creates and saves updated config file, returns the path to the new config
     :param input_args: dict of input args
@@ -37,7 +37,7 @@ def make_valid_config(input_args):
     return updated_config_path
 
 
-def set_config_env_vars(args: dict):
+def set_config_env_vars(args: dict):  # pylint: disable=duplicate-code
     """
     Convert API arguments into environment variables.
     Handles nested dictionaries, lists, and special values.

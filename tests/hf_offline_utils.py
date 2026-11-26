@@ -10,6 +10,7 @@ from huggingface_hub.utils import reset_sessions
 
 
 def reload_modules(hf_hub_offline):
+    # pylint: disable=duplicate-code
     # Force reload of the modules that check this variable
     import importlib
 
@@ -30,6 +31,7 @@ def enable_hf_offline(test_func):
     :param test_func:
     :return:
     """
+    # pylint: disable=duplicate-code
 
     @wraps(test_func)
     def wrapper(*args, **kwargs):
@@ -61,6 +63,7 @@ def disable_hf_offline(test_func):
     :param test_func:
     :return:
     """
+    # pylint: disable=duplicate-code
 
     @wraps(test_func)
     def wrapper(*args, **kwargs):
@@ -93,6 +96,7 @@ def hf_offline_context(hf_hub_offline):
     :param hf_hub_offline: The new value for HF_HUB_OFFLINE.
     :return: A context manager.
     """
+    # pylint: disable=duplicate-code
     original_hf_offline = os.getenv("HF_HUB_OFFLINE")
     os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
     reload_modules(bool(hf_hub_offline))

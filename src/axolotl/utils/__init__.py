@@ -1,6 +1,7 @@
 """
 Basic utils for Axolotl
 """
+# pylint: disable=duplicate-code
 
 import importlib.util
 import os
