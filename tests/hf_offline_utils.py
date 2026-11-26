@@ -9,6 +9,16 @@ from functools import wraps
 from huggingface_hub.utils import reset_sessions
 
 
+def _envvar_to_bool(value):
+    """Convert various representations of an HF_HUB_OFFLINE env var to boolean.
+
+    Accepts strings like "1", "0", "true", "false", "yes", "no", or boolean values.
+    """
+    if isinstance(value, str):
+        return value.lower() in ("1", "true", "yes", "on")
+    return bool(value)
+
+
 def reload_modules(hf_hub_offline):
     # Force reload of the modules that check this variable
     import importlib
@@ -36,7 +46,7 @@ def enable_hf_offline(test_func):
         # Save the original value of HF_HUB_OFFLINE environment variable
         original_hf_offline = os.getenv("HF_HUB_OFFLINE")
 
-        # Set HF_OFFLINE environment variable to True
+        # Set HF_HUB_OFFLINE environment variable to '1' (True)
         os.environ["HF_HUB_OFFLINE"] = "1"
 
         reload_modules(True)
@@ -47,7 +57,7 @@ def enable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                reload_modules(_envvar_to_bool(original_hf_offline))
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -67,7 +77,7 @@ def disable_hf_offline(test_func):
         # Save the original value of HF_HUB_OFFLINE environment variable
         original_hf_offline = os.getenv("HF_HUB_OFFLINE")
 
-        # Set HF_OFFLINE environment variable to True
+        # Set HF_HUB_OFFLINE environment variable to '0' (False)
         os.environ["HF_HUB_OFFLINE"] = "0"
 
         reload_modules(False)
@@ -78,7 +88,7 @@ def disable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                reload_modules(_envvar_to_bool(original_hf_offline))
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -95,12 +105,12 @@ def hf_offline_context(hf_hub_offline):
     """
     original_hf_offline = os.getenv("HF_HUB_OFFLINE")
     os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
-    reload_modules(bool(hf_hub_offline))
+    reload_modules(_envvar_to_bool(hf_hub_offline))
     yield
     # Restore the original value of HF_HUB_OFFLINE environment variable
     if original_hf_offline is not None:
         os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-        reload_modules(bool(original_hf_offline))
+        reload_modules(_envvar_to_bool(original_hf_offline))
     else:
         del os.environ["HF_HUB_OFFLINE"]
         reload_modules(False)
