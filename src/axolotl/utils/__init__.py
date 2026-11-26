@@ -5,8 +5,7 @@ Basic utils for Axolotl
 import importlib.util
 import os
 import re
-
-import torch
+from typing import Tuple
 
 
 def is_mlflow_available():
@@ -18,10 +17,12 @@ def is_comet_available():
 
 
 # pylint: disable=duplicate-code
-def get_pytorch_version() -> tuple[int, int, int]:
+def get_pytorch_version() -> Tuple[int, int, int]:
     """
     Get Pytorch version as a tuple of (major, minor, patch).
     """
+    import torch
+
     torch_version = torch.__version__
     version_match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?", torch_version)
 

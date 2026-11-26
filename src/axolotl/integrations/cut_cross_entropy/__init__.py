@@ -26,7 +26,7 @@ from axolotl.integrations.base import BasePlugin
 from axolotl.utils import get_pytorch_version
 from axolotl.utils.logging import get_logger
 
-from .args import CutCrossEntropyArgs  # pylint: disable=unused-import. # noqa: F401
+from .args import CutCrossEntropyArgs  # pylint: disable=unused-import  # noqa: F401
 
 LOG = get_logger(__name__, use_environ=True)
 

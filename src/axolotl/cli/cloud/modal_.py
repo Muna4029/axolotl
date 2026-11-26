@@ -66,15 +66,34 @@ class ModalCloud(Cloud):
                 _, mount, vol = self.create_volume(volume_config)
                 self.volumes[mount] = (vol, volume_config)
 
+    def _conf(self, key, default=None):
+        """Unified config accessor.
+
+        Tries attribute access first (for attribute-based config objects),
+        then dict-style access, then a .get() method, finally falls back to
+        the provided default.
+        """
+        # Attribute-style config (e.g. dataclass / object with attributes)
+        if hasattr(self.config, key):
+            return getattr(self.config, key)
+        # Mapping-style config
+        if isinstance(self.config, dict):
+            return self.config.get(key, default)
+        # Fallback to a get() method if present
+        if hasattr(self.config, "get") and callable(getattr(self.config, "get")):
+            return self.config.get(key, default)
+        return default
+
     def get_env(self):
         res = {
             "HF_DATASETS_CACHE": "/workspace/data/huggingface-cache/datasets",
             "HF_HUB_CACHE": "/workspace/data/huggingface-cache/hub",
         }
 
-        for key in self.config.get("env", []):
+        for key in self._conf("env", []):
             if isinstance(key, str):
-                if val := os.environ.get(key, ""):
+                val = os.environ.get(key, "")
+                if val:
                     res[key] = val
             elif isinstance(key, dict):
                 (key_, val) = list(key.items())[0]
@@ -128,15 +147,15 @@ class ModalCloud(Cloud):
 
     def get_secrets(self):
         res = []
-        if self.config.secrets:
-            for key in self.config.get("secrets", []):
-                # pylint: disable=duplicate-code
-                if isinstance(key, str):
-                    if val := os.environ.get(key, ""):
-                        res.append(modal.Secret.from_dict({key: val}))
-                elif isinstance(key, dict):
-                    (key_, val) = list(key.items())[0]
-                    res.append(modal.Secret.from_dict({key_: val}))
+        for key in self._conf("secrets", []):
+            # pylint: disable=duplicate-code
+            if isinstance(key, str):
+                val = os.environ.get(key, "")
+                if val:
+                    res.append(modal.Secret.from_dict({key: val}))
+            elif isinstance(key, dict):
+                (key_, val) = list(key.items())[0]
+                res.append(modal.Secret.from_dict({key_: val}))
         return res
 
     def create_volume(self, volume_config):
@@ -188,8 +207,15 @@ class ModalCloud(Cloud):
         return 60 * 60 * 24  # 24 hours
 
     def get_train_gpu(self):  # pylint: disable=too-many-return-statements
-        count = self.config.gpu_count or 1
-        family = self.config.gpu.lower() or "l40s"
+        # Safely obtain gpu_count and gpu family from config using the unified accessor.
+        count = self._conf("gpu_count", 1) or 1
+        try:
+            count = int(count)
+        except Exception:
+            count = 1
+
+        family_val = self._conf("gpu", "l40s")
+        family = str(family_val or "l40s").lower()
 
         if family == "l40s":
             return modal.gpu.L40S(count=count)
@@ -248,7 +274,7 @@ class ModalCloud(Cloud):
         modal_fn = self.get_train_env()(_lm_eval)
         with modal.enable_output():
             with self.app.run(detach=True):
-                if self.config.get("spawn", False):
+                if self._conf("spawn", False):
                     modal_fn_exec = modal_fn.spawn
                 else:
                     modal_fn_exec = modal_fn.remote

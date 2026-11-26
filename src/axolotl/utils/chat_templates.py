@@ -79,20 +79,22 @@ def get_chat_template(
             raise ValueError(
                 f"`tokenizer` cannot be None when chat_template choice is {_DEFAULT_TEMPLATE_CHOICE}"
             )
-        if not tokenizer.chat_template:
+        tok_chat_template = getattr(tokenizer, "chat_template", None)
+        if not tok_chat_template:
             raise ValueError(
                 f"`chat_template choice is {_DEFAULT_TEMPLATE_CHOICE} but tokenizer's chat_template is null. "
                 f"Please add a chat_template in tokenizer config"
             )
-        return tokenizer.chat_template  # type: ignore
+        return tok_chat_template
 
     if user_choice.startswith(_DEFAULT_FALLBACK_CHATML_TEMPLATE_CHOICE_PREFIX):
         if not tokenizer:
             raise ValueError(
                 f"`tokenizer` cannot be None when chat_template choice starts with {_DEFAULT_FALLBACK_CHATML_TEMPLATE_CHOICE_PREFIX}"
             )
-        if tokenizer.chat_template:
-            return tokenizer.chat_template  # type: ignore
+        tok_chat_template = getattr(tokenizer, "chat_template", None)
+        if tok_chat_template:
+            return tok_chat_template
 
         user_choice = user_choice[
             len(_DEFAULT_FALLBACK_CHATML_TEMPLATE_CHOICE_PREFIX) :

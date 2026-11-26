@@ -20,11 +20,14 @@ def make_valid_config(input_args):
     """
     # Load default config
     with open("config/config.yaml", "r", encoding="utf-8") as fin:
-        all_args = yaml.safe_load(fin)
+        all_args = yaml.safe_load(fin) or {}
 
     if not input_args:
-        print("No args provided, using defaults")
+        # No args provided; use defaults
+        input_args = {}
     else:
+        if not isinstance(input_args, dict):
+            raise TypeError("input_args must be a dict")
         all_args.update(input_args)
 
     # Create updated config path
@@ -58,8 +61,10 @@ def set_config_env_vars(args: dict):
 
     def set_env_vars(data, prefix=""):
         """Recursively set environment variables from nested dictionary"""
+        if not isinstance(data, dict):
+            return
         for key, value in data.items():
-            env_key = prefix + key.upper()
+            env_key = f"{prefix}{str(key).upper()}"
 
             # Handle special cases
             if isinstance(value, dict):
@@ -76,6 +81,12 @@ def set_config_env_vars(args: dict):
             else:
                 # Handle all other cases
                 os.environ[env_key] = process_value(value)
+
+    # Validate input
+    if args is None:
+        return
+    if not isinstance(args, dict):
+        raise TypeError("args must be a dict")
 
     # Clear any existing related environment variables
     # This prevents old values from persisting

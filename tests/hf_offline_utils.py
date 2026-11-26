@@ -47,7 +47,9 @@ def enable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                # Interpret the original string explicitly to handle values like "0"/"1" and "true"/"false"
+                orig_val = original_hf_offline.lower() in ("1", "true", "yes", "on")
+                reload_modules(orig_val)
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -78,7 +80,9 @@ def disable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                # Interpret the original string explicitly to handle values like "0"/"1" and "true"/"false"
+                orig_val = original_hf_offline.lower() in ("1", "true", "yes", "on")
+                reload_modules(orig_val)
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -95,12 +99,18 @@ def hf_offline_context(hf_hub_offline):
     """
     original_hf_offline = os.getenv("HF_HUB_OFFLINE")
     os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
-    reload_modules(bool(hf_hub_offline))
+    # Convert the provided hf_hub_offline value to a boolean robustly (handles strings like "0"/"1" and "true"/"false")
+    if isinstance(hf_hub_offline, str):
+        hf_val = hf_hub_offline.lower() in ("1", "true", "yes", "on")
+    else:
+        hf_val = bool(hf_hub_offline)
+    reload_modules(hf_val)
     yield
     # Restore the original value of HF_HUB_OFFLINE environment variable
     if original_hf_offline is not None:
         os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-        reload_modules(bool(original_hf_offline))
+        orig_val = original_hf_offline.lower() in ("1", "true", "yes", "on")
+        reload_modules(orig_val)
     else:
         del os.environ["HF_HUB_OFFLINE"]
         reload_modules(False)

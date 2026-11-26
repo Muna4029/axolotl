@@ -5,10 +5,25 @@ CLI to start the vllm server for online RL
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
-import trl
-from trl.scripts.vllm_serve import ScriptArguments
+# Defer importing heavy third-party dependency `trl` to runtime and provide
+# a lightweight fallback for environments (like pre-commit hooks) that do
+# not have `trl` installed. Using TYPE_CHECKING ensures static type
+# checkers still see the real imports when available.
+if TYPE_CHECKING:
+    import trl  # noqa: F401
+    from trl.scripts.vllm_serve import ScriptArguments
+else:
+    try:
+        import trl  # noqa: F401
+        from trl.scripts.vllm_serve import ScriptArguments
+    except Exception:
+        # Provide a minimal fallback so importing this module does not
+        # fail in environments without `trl` installed. The real
+        # ScriptArguments will be used at runtime when `trl` is present.
+        class ScriptArguments:
+            pass
 
 from axolotl.cli.config import load_cfg
 
@@ -19,8 +34,11 @@ class AxolotlScriptArguments(ScriptArguments):
     Additional arguments for the VLLM server
     """
 
-    reasoning_parser: str = field(default="", kw_only=True)
-    enable_reasoning: bool | None = field(default=None, kw_only=True)
+    # Use dataclasses.field without the kw_only parameter and avoid the
+    # PEP 604 union operator to maintain compatibility with older Python
+    # versions used by some pre-commit hook environments.
+    reasoning_parser: str = field(default="")
+    enable_reasoning: Union[bool, None] = field(default=None)
 
 
 def do_vllm_serve(
