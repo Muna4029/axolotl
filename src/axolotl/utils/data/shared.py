@@ -34,7 +34,7 @@ def get_ds_type(config_dataset: DictDefault):
     return ds_type
 
 
-def datasets_w_name_generator(dataset_configs: list[DictDefault]):
+def datasets_w_name_generator(dataset_configs: List[DictDefault]):
     """
     Yields dataset configs handling multiple names or preprocess_shards
 
@@ -57,18 +57,21 @@ def datasets_w_name_generator(dataset_configs: list[DictDefault]):
                     }
                 )
         else:
-            yield dataset
+            # Ensure we always yield a DictDefault for consistent generator element types
+            yield DictDefault(dataset)
 
 
 def load_dataset_w_config(
-    config_dataset: DictDefault, use_auth_token: bool, streaming=False
+    config_dataset: DictDefault,
+    use_auth_token: Optional[str] = None,
+    streaming: bool = False,
 ) -> Union[Dataset, DatasetDict]:
     """
     Load a dataset from a config
 
     Args:
         config_dataset: single dataset config
-        use_auth_token: whether to use HF auth token
+        use_auth_token: HF auth token (string) or None
         streaming: whether to stream the dataset
     """
     # pylint: disable=invalid-name
@@ -188,9 +191,7 @@ def load_dataset_w_config(
                 )
             else:
                 try:
-                    ds = load_from_disk(
-                        config_dataset.path
-                    )  # pylint: disable=invalid-name
+                    ds = load_from_disk(config_dataset.path)  # pylint: disable=invalid-name
                 except FileNotFoundError:
                     ds = load_dataset(
                         config_dataset.path,
@@ -252,7 +253,7 @@ def load_dataset_w_config(
             **load_ds_kwargs,
         )
     elif config_dataset.data_files:
-        fp: str | list[str] | None = None
+        fp: Union[str, List[str], None] = None
         if isinstance(config_dataset.data_files, str):
             fp = hf_hub_download(
                 repo_id=config_dataset.path,
@@ -262,12 +263,12 @@ def load_dataset_w_config(
             )
         elif isinstance(config_dataset.data_files, list):
             fp = []
-            for file in config_dataset.data_files:
+            for filename in config_dataset.data_files:
                 fp.append(
                     hf_hub_download(
                         repo_id=config_dataset.path,
                         repo_type="dataset",
-                        filename=file,
+                        filename=filename,
                         revision=config_dataset.revision,
                     )
                 )
