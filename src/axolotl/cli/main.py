@@ -9,30 +9,12 @@ from typing import Literal, Optional
 import click
 from dotenv import load_dotenv
 
-import axolotl
-from axolotl.cli.args import (
-    EvaluateCliArgs,
-    PreprocessCliArgs,
-    QuantizeCliArgs,
-    TrainerCliArgs,
-    VllmServeCliArgs,
-)
-from axolotl.cli.art import print_axolotl_text_art
-from axolotl.cli.utils import (
-    add_options_from_config,
-    add_options_from_dataclass,
-    build_command,
-    fetch_from_github,
-    filter_none_kwargs,
-    generate_config_files,
-    launch_training,
-)
-from axolotl.integrations.lm_eval.cli import lm_eval
-from axolotl.utils import patch_optimized_env
-from axolotl.utils.logging import get_logger
-from axolotl.utils.schemas.config import AxolotlInputConfig
+# Avoid importing the axolotl package and its submodules at module import time
+# to prevent heavy dependency evaluation during packaging/installation.
+# Where axolotl internals are required, import them lazily inside functions.
 
-LOG = get_logger(__name__)
+
+LOG = None
 
 LAUNCHER_COMMAND_MAPPING = {
     "accelerate": ["accelerate", "launch"],

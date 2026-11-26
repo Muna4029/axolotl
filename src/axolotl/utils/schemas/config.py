@@ -26,27 +26,66 @@ from axolotl.utils.schemas.datasets import (
 )
 from axolotl.utils.schemas.deprecated import DeprecatedParameters, RemappedParameters
 from axolotl.utils.schemas.enums import ChatTemplate, RingAttnFunc, RLType
-from axolotl.utils.schemas.integrations import (
-    CometConfig,
-    GradioConfig,
-    LISAConfig,
-    MLFlowConfig,
-    RayConfig,
-    WandbConfig,
-)
-from axolotl.utils.schemas.internal import EnvCapabilities, GPUCapabilities
+
+# Optional / integration imports can bring heavy third-party dependencies.
+# Guard them so importing this module doesn't force-install optional integrations
+# during dependency resolution in CI environments.
+try:
+    from axolotl.utils.schemas.integrations import (
+        CometConfig,
+        GradioConfig,
+        LISAConfig,
+        MLFlowConfig,
+        RayConfig,
+        WandbConfig,
+    )
+except Exception:
+    CometConfig = GradioConfig = LISAConfig = MLFlowConfig = RayConfig = WandbConfig = (
+        None
+    )
+
+try:
+    from axolotl.utils.schemas.internal import EnvCapabilities, GPUCapabilities
+except Exception:
+    EnvCapabilities = GPUCapabilities = None
+
 from axolotl.utils.schemas.model import (
     ModelInputConfig,
     ModelOutputConfig,
     SpecialTokensConfig,
 )
-from axolotl.utils.schemas.multimodal import MultiModalConfig
-from axolotl.utils.schemas.peft import LoraConfig, ReLoRAConfig
-from axolotl.utils.schemas.quantization import PTQConfig, QATConfig
-from axolotl.utils.schemas.training import HyperparametersConfig
-from axolotl.utils.schemas.trl import TRLConfig
+
+try:
+    from axolotl.utils.schemas.multimodal import MultiModalConfig
+except Exception:
+    MultiModalConfig = None
+
+try:
+    from axolotl.utils.schemas.peft import LoraConfig, ReLoRAConfig
+except Exception:
+    LoraConfig = ReLoRAConfig = None
+
+try:
+    from axolotl.utils.schemas.quantization import PTQConfig, QATConfig
+except Exception:
+    PTQConfig = QATConfig = None
+
+try:
+    from axolotl.utils.schemas.training import HyperparametersConfig
+except Exception:
+    HyperparametersConfig = None
+
+try:
+    from axolotl.utils.schemas.trl import TRLConfig
+except Exception:
+    TRLConfig = None
+
 from axolotl.utils.schemas.validation import ValidationMixin
-from axolotl.utils.schemas.vllm import VllmConfig
+
+try:
+    from axolotl.utils.schemas.vllm import VllmConfig
+except Exception:
+    VllmConfig = None
 
 LOG = get_logger(__name__)
 

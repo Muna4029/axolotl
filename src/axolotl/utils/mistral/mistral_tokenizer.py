@@ -1,14 +1,19 @@
 """Wrapper for MistralTokenizer from mistral-common"""
 
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-import numpy as np
-from mistral_common.protocol.instruct.validator import ValidationMode
-from mistral_common.tokens.tokenizers.utils import download_tokenizer_from_hf_hub
-from torch import Tensor
-from transformers.tokenization_mistral_common import MistralCommonTokenizer
-from transformers.tokenization_utils_base import VERY_LARGE_INTEGER
+# Defer importing heavy external dependencies to type-checking time or until they
+# are actually needed at runtime. This prevents forcing resolution/installation
+# of large dependency trees during simple imports (e.g., in CI dependency
+# resolution) and avoids import-time failures in minimal environments.
+if TYPE_CHECKING:
+    import numpy as np
+    from mistral_common.protocol.instruct.validator import ValidationMode
+    from mistral_common.tokens.tokenizers.utils import download_tokenizer_from_hf_hub
+    from torch import Tensor
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+    from transformers.tokenization_utils_base import VERY_LARGE_INTEGER
 
 
 class HFMistralTokenizer(MistralCommonTokenizer):
