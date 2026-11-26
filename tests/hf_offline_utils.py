@@ -47,7 +47,14 @@ def enable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+
+                # Convert the original environment string to a proper boolean
+                def _str_to_bool(val):
+                    if isinstance(val, str):
+                        return val.lower() in ("1", "true", "yes", "y", "t")
+                    return bool(val)
+
+                reload_modules(_str_to_bool(original_hf_offline))
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -67,7 +74,7 @@ def disable_hf_offline(test_func):
         # Save the original value of HF_HUB_OFFLINE environment variable
         original_hf_offline = os.getenv("HF_HUB_OFFLINE")
 
-        # Set HF_OFFLINE environment variable to True
+        # Set HF_OFFLINE environment variable to False
         os.environ["HF_HUB_OFFLINE"] = "0"
 
         reload_modules(False)
@@ -78,7 +85,14 @@ def disable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+
+                # Convert the original environment string to a proper boolean
+                def _str_to_bool(val):
+                    if isinstance(val, str):
+                        return val.lower() in ("1", "true", "yes", "y", "t")
+                    return bool(val)
+
+                reload_modules(_str_to_bool(original_hf_offline))
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -94,13 +108,21 @@ def hf_offline_context(hf_hub_offline):
     :return: A context manager.
     """
     original_hf_offline = os.getenv("HF_HUB_OFFLINE")
-    os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
-    reload_modules(bool(hf_hub_offline))
+
+    # Determine canonical string and boolean value to set
+    def _str_to_bool(val):
+        if isinstance(val, str):
+            return val.lower() in ("1", "true", "yes", "y", "t")
+        return bool(val)
+
+    bool_value = _str_to_bool(hf_hub_offline)
+    os.environ["HF_HUB_OFFLINE"] = "1" if bool_value else "0"
+    reload_modules(bool_value)
     yield
     # Restore the original value of HF_HUB_OFFLINE environment variable
     if original_hf_offline is not None:
         os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-        reload_modules(bool(original_hf_offline))
+        reload_modules(_str_to_bool(original_hf_offline))
     else:
         del os.environ["HF_HUB_OFFLINE"]
         reload_modules(False)
