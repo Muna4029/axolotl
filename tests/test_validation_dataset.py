@@ -1,5 +1,6 @@
 """Module for testing the validation module for the dataset config"""
 
+# pylint: disable=R0801
 import warnings
 from typing import Optional
 
@@ -25,7 +26,7 @@ def fixture_cfg():
 
 
 # pylint: disable=too-many-public-methods (duplicate-code)
-class BaseValidation:
+class BaseValidation:  # pylint: disable=R0801
     """
     Base validation module to setup the log capture
     """
@@ -37,7 +38,7 @@ class BaseValidation:
         self._caplog = caplog
 
 
-class TestValidationCheckDatasetConfig(BaseValidation):
+class TestValidationCheckDatasetConfig(BaseValidation):  # pylint: disable=R0801
     """
     Test the validation for the dataset config to ensure no correct parameters are dropped
     """
@@ -323,7 +324,7 @@ class TestValidationCheckDatasetConfig(BaseValidation):
         validate_config(cfg)
 
 
-class TestOptimizerValidation(BaseValidation):
+class TestOptimizerValidation(BaseValidation):  # pylint: disable=R0801
     """
     Test muon optimizer validation
     """

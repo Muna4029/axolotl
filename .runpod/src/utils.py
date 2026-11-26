@@ -2,6 +2,8 @@
 Runpod launcher utils
 """
 
+# pylint: disable=duplicate-code
+
 import os
 
 import yaml

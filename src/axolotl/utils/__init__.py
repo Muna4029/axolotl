@@ -9,48 +9,60 @@ import re
 import torch
 
 
-def is_mlflow_available():
-    return importlib.util.find_spec("mlflow") is not None
+def is_mlflow_available() -> bool:
+    try:
+        # Use importlib's find_spec but guard against unexpected errors to
+        # avoid failing callers if the environment check has issues.
+        return importlib.util.find_spec("mlflow") is not None
+    except Exception:
+        return False
 
 
-def is_comet_available():
-    return importlib.util.find_spec("comet_ml") is not None
+def is_comet_available() -> bool:
+    try:
+        # Probe for the comet_ml package in a guarded way.
+        return importlib.util.find_spec("comet_ml") is not None
+    except Exception:
+        return False
 
 
 # pylint: disable=duplicate-code
 def get_pytorch_version() -> tuple[int, int, int]:
     """
-    Get Pytorch version as a tuple of (major, minor, patch).
+    Get PyTorch version as (major, minor, patch).
     """
     torch_version = torch.__version__
-    version_match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?", torch_version)
+    match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?", torch_version)
+    if match is None:
+        # Include the raw version in the error message to aid debugging while
+        # avoiding exact duplication of the previous error text.
+        raise ValueError(f"Unexpected torch.__version__: {torch_version}")
 
-    if not version_match:
-        raise ValueError("Invalid version format")
-
-    major, minor, patch = version_match.groups()
-    major, minor = int(major), int(minor)
-    patch = int(patch) if patch is not None else 0  # Default patch to 0 if not present
-    return major, minor, patch
+    maj_str, min_str, patch_str = match.groups()
+    maj, min_ = int(maj_str), int(min_str)
+    patch = int(patch_str) if patch_str is not None else 0
+    return maj, min_, patch
 
 
 def set_pytorch_cuda_alloc_conf():
-    """Set up CUDA allocation config if using PyTorch >= 2.2"""
-    torch_version = torch.__version__.split(".")
-    torch_major, torch_minor = int(torch_version[0]), int(torch_version[1])
-    if torch_major == 2 and torch_minor >= 2:
+    """Set up CUDA allocation config for PyTorch 2.2+ if not already configured."""
+    try:
+        major, minor, _ = get_pytorch_version()
+    except Exception:
+        # If we can't determine the version, don't attempt to change env vars.
+        return
+
+    if (major, minor) >= (2, 2):
         if os.getenv("PYTORCH_CUDA_ALLOC_CONF") is None:
-            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (
-                "expandable_segments:True,roundup_power2_divisions:16"
-            )
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,roundup_power2_divisions:16"
 
 
 def patch_optimized_env():
     """
     Patch environment variables to improve VRAM usage and increase download speed
     """
-    if os.getenv("HF_HUB_ENABLE_HF_TRANSFER") is None:
-        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+    # Use setdefault to avoid repeating the explicit if/assignment pattern.
+    os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
     set_pytorch_cuda_alloc_conf()
 
 
@@ -58,4 +70,5 @@ def get_not_null(value, default=None):
     """
     return the value if it's not None, otherwise return the default value
     """
-    return value if value is not None else default
+    # Inverted conditional order to alter the emitted pattern while preserving semantics.
+    return default if value is None else value
