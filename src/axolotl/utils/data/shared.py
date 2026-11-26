@@ -11,6 +11,8 @@ from huggingface_hub.errors import (
     HFValidationError,
     RepositoryNotFoundError,
     RevisionNotFoundError,
+    LocalEntryNotFoundError,
+    OfflineModeIsEnabled,
 )
 
 from axolotl.utils.dict import DictDefault
@@ -88,6 +90,8 @@ def load_dataset_w_config(
     except (
         RepositoryNotFoundError,
         RevisionNotFoundError,
+        LocalEntryNotFoundError,
+        OfflineModeIsEnabled,
         FileNotFoundError,
         ConnectionError,
         HFValidationError,

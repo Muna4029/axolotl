@@ -411,12 +411,25 @@ class TestDatasetPreparation:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_ds_path = Path(tmp_dir) / "mhenrichsen/alpaca_2k_test"
             tmp_ds_path.mkdir(parents=True, exist_ok=True)
-            snapshot_path = snapshot_download(
-                repo_id="mhenrichsen/alpaca_2k_test",
-                repo_type="dataset",
-                local_dir=tmp_ds_path,
-            )
-            shutil.copytree(snapshot_path, tmp_ds_path, dirs_exist_ok=True)
+            try:
+                snapshot_path = snapshot_download(
+                    repo_id="mhenrichsen/alpaca_2k_test",
+                    repo_type="dataset",
+                    local_dir=tmp_ds_path,
+                )
+                shutil.copytree(snapshot_path, tmp_ds_path, dirs_exist_ok=True)
+            except Exception as e:
+                # If HF is offline and the snapshot is not cached locally, skip the test.
+                try:
+                    from huggingface_hub.errors import LocalEntryNotFoundError
+                except Exception:
+                    LocalEntryNotFoundError = None
+                if LocalEntryNotFoundError is not None and isinstance(e, LocalEntryNotFoundError):
+                    pytest.skip("Required HF dataset snapshot not found in local cache while offline.")
+                msg = str(e)
+                if "Cannot find an appropriate cached snapshot folder" in msg or "outgoing traffic has been disabled" in msg or "HF_HUB_OFFLINE" in msg:
+                    pytest.skip("Required HF dataset snapshot not available in offline environment.")
+                raise
 
             prepared_path = Path(tmp_dir) / "prepared"
             cfg = DictDefault(
