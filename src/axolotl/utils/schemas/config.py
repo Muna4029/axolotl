@@ -10,7 +10,6 @@ from packaging import version
 from pydantic import (
     BaseModel,
     Field,
-    StringConstraints,
     field_serializer,
     model_validator,
 )

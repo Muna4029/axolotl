@@ -6,7 +6,7 @@ import importlib.util
 import os
 import re
 
-import torch
+import torch  # type: ignore
 
 
 def is_mlflow_available():
