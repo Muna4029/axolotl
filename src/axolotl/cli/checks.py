@@ -3,10 +3,8 @@
 import os
 from pathlib import Path
 
-from accelerate.commands.config import config_args
-from huggingface_hub import HfApi
-from huggingface_hub.utils import LocalTokenNotFoundError
-from requests import HTTPError
+# Defer heavy third-party imports to runtime to avoid hard import-time dependencies.
+# These will be imported inside the functions that actually use them.
 
 from axolotl.utils.logging import get_logger
 

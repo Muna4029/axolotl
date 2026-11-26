@@ -6,7 +6,9 @@ import importlib.util
 import os
 import re
 
-import torch
+# Avoid importing heavy optional dependency `torch` at module import time.
+# Import torch lazily inside functions that need it to prevent pre-commit
+# environments from attempting to install it.
 
 
 def is_mlflow_available():
@@ -35,9 +37,30 @@ def get_pytorch_version() -> tuple[int, int, int]:
 
 
 def set_pytorch_cuda_alloc_conf():
-    """Set up CUDA allocation config if using PyTorch >= 2.2"""
-    torch_version = torch.__version__.split(".")
-    torch_major, torch_minor = int(torch_version[0]), int(torch_version[1])
+    """Set up CUDA allocation config if using PyTorch >= 2.2
+
+    This function performs a lazy import of torch and uses a defensive
+    version parse to avoid ValueError on non-numeric version components
+    (e.g. '2.2rc1' or '2.2.0+cu118'). If torch is not available, the
+    function is a no-op.
+    """
+    try:
+        import torch  # imported lazily to avoid top-level dependency
+    except Exception:
+        return
+
+    torch_ver = getattr(torch, "__version__", "")
+    # Match major and minor numeric components at the start of the version
+    m = re.match(r"^(\d+)\.(\d+)", str(torch_ver))
+    if not m:
+        return
+
+    try:
+        torch_major = int(m.group(1))
+        torch_minor = int(m.group(2))
+    except ValueError:
+        return
+
     if torch_major == 2 and torch_minor >= 2:
         if os.getenv("PYTORCH_CUDA_ALLOC_CONF") is None:
             os.environ["PYTORCH_CUDA_ALLOC_CONF"] = (
