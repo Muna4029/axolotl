@@ -547,7 +547,7 @@ class PluginManager:  # pylint: disable=too-many-public-methods
             The created optimizer, or `None` if none was found.
         """
         for plugin in self.plugins.values():
-            optimizer = plugin.create_optimizer(self.cfg, trainer)
+            optimizer = plugin.create_optimizer(trainer)
             if optimizer is not None:
                 return optimizer
         return None
@@ -567,7 +567,6 @@ class PluginManager:  # pylint: disable=too-many-public-methods
         """
         for plugin in self.plugins.values():
             scheduler: LRScheduler | None = plugin.create_lr_scheduler(
-                self.cfg,
                 trainer=trainer,
                 optimizer=optimizer,
                 num_training_steps=num_training_steps,

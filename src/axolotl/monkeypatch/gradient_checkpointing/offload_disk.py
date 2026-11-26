@@ -167,6 +167,7 @@ class DiskOffloadManager:
                         or self.file_status[file_path] == "deleted"
                     ):
                         self.prefetch_queue.task_done()
+                        continue
                     if file_path in self.prefetch_cache:
                         self.prefetch_queue.task_done()
                         continue

@@ -6,7 +6,6 @@ import hashlib
 import json
 from functools import wraps
 from pathlib import Path
-from types import NoneType
 from typing import Any, Callable, Type, Union, get_args, get_origin
 
 import click
@@ -39,9 +38,7 @@ def strip_optional_type(field_type: type | str | None):
             returns the input type unchanged.
     """
     if get_origin(field_type) is Union and type(None) in get_args(field_type):
-        field_type = next(
-            t for t in get_args(field_type) if not isinstance(t, NoneType)
-        )
+        field_type = next(t for t in get_args(field_type) if t is not type(None))
 
     return field_type
 
@@ -118,7 +115,7 @@ def add_options_from_config(config_class: Type[BaseModel]) -> Callable:
 
     def decorator(function: Callable) -> Callable:
         # Process model fields in reverse order for correct option ordering
-        for name, field in reversed(config_class.model_fields.items()):
+        for name, field in reversed(list(config_class.model_fields.items())):
             field_type = strip_optional_type(field.annotation)
 
             if field_type == bool:
@@ -198,7 +195,7 @@ def download_file(
             return file_path, "unchanged"
 
         print(f"Updating {file_path}")
-        status = "new"
+        status = "updated"
     else:
         print(f"Downloading {file_path}")
         status = "new"
