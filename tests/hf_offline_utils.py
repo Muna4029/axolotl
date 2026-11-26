@@ -47,7 +47,8 @@ def enable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                # Interpret the original string value explicitly ("1", "true", etc.)
+                reload_modules(original_hf_offline.lower() in ("1", "true", "yes", "on"))
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -78,7 +79,8 @@ def disable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                # Interpret the original string value explicitly ("1", "true", etc.)
+                reload_modules(original_hf_offline.lower() in ("1", "true", "yes", "on"))
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -95,12 +97,17 @@ def hf_offline_context(hf_hub_offline):
     """
     original_hf_offline = os.getenv("HF_HUB_OFFLINE")
     os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
-    reload_modules(bool(hf_hub_offline))
+    # Determine the effective boolean value for hf_hub_offline.
+    if isinstance(hf_hub_offline, bool):
+        effective = hf_hub_offline
+    else:
+        effective = str(hf_hub_offline).lower() in ("1", "true", "yes", "on")
+    reload_modules(effective)
     yield
     # Restore the original value of HF_HUB_OFFLINE environment variable
     if original_hf_offline is not None:
         os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-        reload_modules(bool(original_hf_offline))
+        reload_modules(original_hf_offline.lower() in ("1", "true", "yes", "on"))
     else:
         del os.environ["HF_HUB_OFFLINE"]
         reload_modules(False)

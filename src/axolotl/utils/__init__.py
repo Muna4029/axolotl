@@ -6,7 +6,12 @@ import importlib.util
 import os
 import re
 
-import torch
+try:
+    import torch
+except Exception:
+    # Torch is an optional heavy dependency; guard its import so tools
+    # running in isolated environments (e.g., pre-commit hooks) don't fail.
+    torch = None
 
 
 def is_mlflow_available():

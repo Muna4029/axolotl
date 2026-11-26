@@ -4,7 +4,7 @@ Runpod launcher utils
 
 import os
 
-import yaml
+import yaml  # type: ignore
 
 
 def get_output_dir(run_id):
@@ -23,7 +23,8 @@ def make_valid_config(input_args):
         all_args = yaml.safe_load(fin)
 
     if not input_args:
-        print("No args provided, using defaults")
+        import logging
+        logging.getLogger(__name__).info("No args provided, using defaults")
     else:
         all_args.update(input_args)
 
