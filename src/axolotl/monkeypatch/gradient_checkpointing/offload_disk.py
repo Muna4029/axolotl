@@ -58,7 +58,30 @@ class DiskOffloadManager:
             prefetch_to_gpu: Whether to prefetch tensors directly to GPU memory.
             save_workers: Maximum number of concurrent save operations.
         """
-        self.temp_dir = tempfile.mkdtemp(prefix="disco_")
+        # Use a shared temporary directory for all instances to avoid creating
+        # many temp dirs during repeated instantiation (e.g., during import).
+        cls = self.__class__
+        # Initialize a class-level lock if not present
+        if not hasattr(cls, "_class_lock"):
+            cls._class_lock = threading.Lock()
+
+        with cls._class_lock:
+            if not hasattr(cls, "_shared_temp_dir"):
+                # Lazily create a single shared temp dir for all instances
+                cls._shared_temp_dir = tempfile.mkdtemp(prefix="disco_shared_")
+                # Register a single atexit cleanup for the shared temp dir
+                def _cleanup_shared():
+                    try:
+                        import shutil
+
+                        shutil.rmtree(cls._shared_temp_dir, ignore_errors=True)
+                    except Exception:
+                        pass
+
+                atexit.register(_cleanup_shared)
+
+        # Point this instance to the shared temp dir instead of creating a new one
+        self.temp_dir = cls._shared_temp_dir
 
         # Track tensor paths and their status
         self.tensor_paths: deque = deque()  # Ordered history of tensor paths (LIFO)
@@ -101,7 +124,8 @@ class DiskOffloadManager:
         self.save_worker.start()
         self.idx = 0
 
-        atexit.register(self.cleanup)
+        # Note: cleanup of the shared temp dir is handled by the single atexit
+        # registered above. Individual instances still share lifecycle via file_status, etc.
 
     def _save_worker(self):
         """Background thread that processes the save queue"""
@@ -138,19 +162,32 @@ class DiskOffloadManager:
                 # Mark file as ready
                 self.file_status[file_path] = "ready"
 
-            # Release semaphore
-            self.save_semaphore.release()
-
             return True
-        except FileNotFoundError as e:
+        except Exception as e:
+            # Catch all exceptions (including disk-full / IO errors) and ensure
+            # we mark the file as errored and clean up any partial file and
+            # semaphore state.
             logger.error(f"Error saving tensor to {file_path}: {e}")
             with self.manager_lock:
                 self.file_status[file_path] = "error"
 
-            # Release semaphore
-            self.save_semaphore.release()
+            # Attempt to remove any partially written file to avoid leaving
+            # garbage on disk.
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception:
+                # Best-effort cleanup; ignore errors here
+                pass
 
             return False
+        finally:
+            # Always release the semaphore to avoid deadlocks even on errors.
+            try:
+                self.save_semaphore.release()
+            except Exception:
+                # If release fails for some reason, ignore to avoid crashing.
+                pass
 
     def _prefetch_worker(self):
         """Background thread that loads tensors from disk ahead of time"""
@@ -158,6 +195,11 @@ class DiskOffloadManager:
             try:
                 file_path = self.prefetch_queue.get(timeout=0.5)
                 if file_path is None:
+                    # Ensure task_done for explicit None sentinel and continue
+                    try:
+                        self.prefetch_queue.task_done()
+                    except Exception:
+                        pass
                     continue
 
                 # Check if file is available and not already in cache
@@ -166,18 +208,30 @@ class DiskOffloadManager:
                         file_path not in self.file_status
                         or self.file_status[file_path] == "deleted"
                     ):
-                        self.prefetch_queue.task_done()
+                        # Nothing to do for this item
+                        try:
+                            self.prefetch_queue.task_done()
+                        except Exception:
+                            pass
+                        continue
+
                     if file_path in self.prefetch_cache:
-                        self.prefetch_queue.task_done()
+                        try:
+                            self.prefetch_queue.task_done()
+                        except Exception:
+                            pass
                         continue
 
                     # If file is still being saved, wait for it
                     if (
-                        self.file_status[file_path] == "saving"
+                        self.file_status.get(file_path) == "saving"
                         and file_path in self.save_futures
                     ):
                         # Re-queue this prefetch request with a little delay
-                        self.prefetch_queue.task_done()
+                        try:
+                            self.prefetch_queue.task_done()
+                        except Exception:
+                            pass
                         time.sleep(0.1)
                         self.prefetch_queue.put(file_path)
                         continue
@@ -214,7 +268,12 @@ class DiskOffloadManager:
                             logger.warning(f"Prefetch error for {file_path}: {e}")
                             self.file_status[file_path] = "error"
 
-                self.prefetch_queue.task_done()
+                finally:
+                    # Ensure we always mark this queue task as done exactly once
+                    try:
+                        self.prefetch_queue.task_done()
+                    except Exception:
+                        pass
 
             except queue.Empty:
                 time.sleep(0.01)  # Small sleep to prevent CPU spinning
