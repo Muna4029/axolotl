@@ -47,7 +47,7 @@ def enable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                reload_modules(original_hf_offline == "1")
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -78,7 +78,7 @@ def disable_hf_offline(test_func):
             # Restore the original value of HF_HUB_OFFLINE environment variable
             if original_hf_offline is not None:
                 os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-                reload_modules(bool(original_hf_offline))
+                reload_modules(original_hf_offline == "1")
             else:
                 del os.environ["HF_HUB_OFFLINE"]
                 reload_modules(False)
@@ -95,12 +95,12 @@ def hf_offline_context(hf_hub_offline):
     """
     original_hf_offline = os.getenv("HF_HUB_OFFLINE")
     os.environ["HF_HUB_OFFLINE"] = str(hf_hub_offline)
-    reload_modules(bool(hf_hub_offline))
+    reload_modules(str(hf_hub_offline) == "1")
     yield
     # Restore the original value of HF_HUB_OFFLINE environment variable
     if original_hf_offline is not None:
         os.environ["HF_HUB_OFFLINE"] = original_hf_offline
-        reload_modules(bool(original_hf_offline))
+        reload_modules(original_hf_offline == "1")
     else:
         del os.environ["HF_HUB_OFFLINE"]
         reload_modules(False)

@@ -2,9 +2,15 @@
 monkeypatch for Trainer _get_learning_rate method
 """
 
-import torch
+from typing import TYPE_CHECKING
 
-from axolotl.utils.logging import get_logger
+if TYPE_CHECKING:
+    import torch
+
+# Lazily proxy get_logger to avoid importing heavy/local dependencies at module import time
+def get_logger(*args, **kwargs):
+    from axolotl.utils.logging import get_logger as _real_get_logger
+    return _real_get_logger(*args, **kwargs)
 
 LOG = get_logger(__name__)
 
@@ -37,6 +43,19 @@ def _get_learning_rate(self):
 
 
 def patch_trainer_get_lr():
-    from transformers.trainer import Trainer
+    try:
+        # Import lazily and handle absence of transformers gracefully
+        from transformers import Trainer as _Trainer
+    except Exception:
+        try:
+            LOG.warning("transformers not available; skipping Trainer._get_learning_rate patch")
+        except Exception:
+            pass
+        return False
 
-    Trainer._get_learning_rate = _get_learning_rate  # pylint: disable=protected-access
+    # Apply patch only when possible; add attribute if missing
+    if hasattr(_Trainer, "_get_learning_rate"):
+        _Trainer._get_learning_rate = _get_learning_rate  # pylint: disable=protected-access
+    else:
+        setattr(_Trainer, "_get_learning_rate", _get_learning_rate)
+    return True
