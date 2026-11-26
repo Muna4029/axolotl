@@ -25,10 +25,15 @@ import importlib
 import traceback
 from typing import TYPE_CHECKING, Callable, OrderedDict, Union
 
-from peft import PeftModel
-from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LRScheduler
-from transformers import PreTrainedModel, Trainer
+if TYPE_CHECKING:
+    # Optional/heavy dependencies are imported only for type checking to avoid
+    # forcing these imports at runtime (which can trigger dependency resolution
+    # issues during packaging/install). Using TYPE_CHECKING ensures these are
+    # available for static analysis without importing them at module import time.
+    from peft import PeftModel
+    from torch.optim import Optimizer
+    from torch.optim.lr_scheduler import LRScheduler
+    from transformers import PreTrainedModel, Trainer
 
 from axolotl.utils.dict import DictDefault
 from axolotl.utils.logging import get_logger
