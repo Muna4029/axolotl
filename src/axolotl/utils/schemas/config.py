@@ -1100,6 +1100,10 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_qat_config(cls, data):
+        # Guard against None input coming from the validator chain
+        if data is None:
+            return data
+
         qat_cfg = data.get("qat", {})
         if not qat_cfg:
             return data
@@ -1142,6 +1146,8 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
                 raise ValueError(
                     "FSDP2 and QAT are not supported on torch version < 2.7.0"
                 )
+
+        return data
 
     @model_validator(mode="before")
     @classmethod
@@ -1217,7 +1223,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
             and data.get("dataloader_pin_memory") is None
             and data.get("dataloader_prefetch_factor") is None
         ):
-            data["dataloader_num_workers"] = data.get("capabilities").get("n_gpu", 1)
+            # Guard against missing or None capabilities
+            capabilities = data.get("capabilities") or {}
+            data["dataloader_num_workers"] = capabilities.get("n_gpu", 1)
             data["dataloader_pin_memory"] = True
             data["dataloader_prefetch_factor"] = 256
 

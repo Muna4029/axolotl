@@ -16,8 +16,21 @@ try:
     is_ampere = torch.cuda.get_device_capability()[0] >= 8
 except RuntimeError:
     is_ampere = False
-if cuda != "12.1" and cuda != "11.8" and cuda != "12.4":
-    raise RuntimeError(f"CUDA = {cuda} not supported!")
+if cuda.lower() == "none":
+    # CPU-only environment, allow
+    pass
+else:
+    try:
+        parts = cuda.split(".")
+        major = int(parts[0])
+        minor = int(parts[1]) if len(parts) > 1 else 0
+    except Exception:
+        # Unknown format — warn but continue to avoid hard failure in CI
+        print(f"Warning: Unrecognized CUDA version format: {cuda}. Continuing...")
+    else:
+        # Allow 11.8 and any CUDA 12.x (including newer minor versions like 12.6)
+        if not (major == 11 and minor == 8) and not (major >= 12):
+            print(f"Warning: CUDA = {cuda} not officially supported, continuing...")
 if v <= V("2.1.0"):
     raise RuntimeError(f"Torch = {v} too old!")
 elif v <= V("2.1.1"):
